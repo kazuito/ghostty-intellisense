@@ -22,12 +22,15 @@ function buildDiagnostic(
 
   const parsed = parseDocumentLine(line, lineNum);
   const isUnknownField = message === UNKNOWN_FIELD_MESSAGE;
+  const fieldStart = line.indexOf(field);
 
   return {
     range:
       !isUnknownField && parsed.type === "entry"
         ? parsed.valueRange
-        : rangeOf(lineNum, Math.max(0, line.indexOf(field)), field.length),
+        : fieldStart >= 0
+          ? rangeOf(lineNum, fieldStart, field.length)
+          : parsed.lineRange,
     message,
     severity: "error",
     code: isUnknownField ? "unknown-key" : "invalid-value",

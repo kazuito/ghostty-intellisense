@@ -93,7 +93,7 @@ async function setupDiagnostics(content: string, ghosttyOutput = "") {
     return (calls[calls.length - 1]?.[0]?.diagnostics as Diagnostic[]) ?? [];
   };
 
-  return { getDiagnostics, getCloseDiagnostics };
+  return { getDiagnostics, getCloseDiagnostics, connection };
 }
 
 // ─── parseGhosttyOutput unit tests ──────────────────────────────────────────
@@ -117,6 +117,15 @@ describe("parseGhosttyOutput", () => {
     const diags = parseGhosttyOutput(output, lines);
     expect(diags).toHaveLength(1);
     expect(diags[0]?.range.start.line).toBe(2);
+  });
+
+  it("highlights the whole line when the reported field is not on it", () => {
+    const output = "/tmp/ghostty-test:1:language: unknown field";
+    const diags = parseGhosttyOutput(output, ["# comment"]);
+    expect(diags[0]?.range).toEqual({
+      start: { line: 0, character: 0 },
+      end: { line: 0, character: 9 },
+    });
   });
 
   it("passes through unknown field messages from CLI", () => {
@@ -312,6 +321,30 @@ describe("diagnostics provider - duplicate key", () => {
 });
 
 // ─── Integration: value validation (via mocked CLI) ──────────────────────────
+
+describe("diagnostics provider - failures", () => {
+  it("logs and keeps in-process diagnostics when reading settings fails", async () => {
+    const { getDiagnostics, connection } = await setupDiagnostics(
+      "font-size = 12\nfont-size = 13",
+    );
+    connection.workspace.getConfiguration.mockRejectedValue(new Error("boom"));
+    const diags = await getDiagnostics();
+    expect(connection.console.error).toHaveBeenCalledWith(
+      expect.stringContaining("boom"),
+    );
+    expect(diags.map((d) => d.code)).toEqual(["duplicate-key"]);
+  });
+
+  it("skips the CLI when the temp file cannot be written", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      "bogus = 1",
+      "/tmp/mock:1:bogus: unknown field",
+    );
+    writeFile.mockRejectedValue(new Error("EACCES"));
+    expect(await getDiagnostics()).toEqual([]);
+    expect(execFile).not.toHaveBeenCalled();
+  });
+});
 
 describe("diagnostics provider - value validation", () => {
   it("invalid boolean value produces an error", async () => {
