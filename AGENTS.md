@@ -52,7 +52,7 @@ src/
 test/
 ├── unit/           # bun test suite, one file per feature/module, plus
 │                   # fast-check properties in properties.test.ts
-├── integration/    # bun tests against the real Ghostty CLI (skipped if absent)
+├── integration/    # bun tests against the real Ghostty CLI (skipped locally if absent)
 ├── e2e/            # VS Code E2E (mocha tdd) against a fake Ghostty CLI
 └── grammar/        # vscode-tmgrammar-test scope assertions
 ```
@@ -139,15 +139,20 @@ bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
   `mock.module` is process-global and the unit tests mock
   `node:child_process`; `bunfig.toml` sets the bare `bun test` root to
   `test/unit`, so run these via `bun test ./test/integration` (the `./`
-  bypasses that root). Overlay values the installed Ghostty rejects go in
-  its `newerThanInstalled` skip list only when they are confirmed upstream.
+  bypasses that root). Skipped when Ghostty is absent, except under `CI`,
+  where they fail instead; `ci.yml` installs a pinned Ghostty `.deb` on
+  `ubuntu-24.04`, and `publish.yml` gates releases on that workflow.
+  Overlay values the installed Ghostty rejects go in its
+  `newerThanInstalled` skip list only when they are confirmed upstream.
+  A parity test runs the E2E fake and the real CLI on the same config and
+  expects identical diagnostics.
 - **E2E** (`test/e2e/`, config in `.vscode-test.mjs`): launches VS Code and
   drives the extension through `vscode.execute*Provider` commands. Each
   suite calls `useFakeGhostty()`, which points `ghostty.executablePath` at
   `test/e2e/fixtures/bin/ghostty` and waits for its impossible `font-size`
   default (`42`) so tests can never pass against a real install. Extend the
   fake when E2E needs new CLI behavior; keep its output in Ghostty's real
-  formats. Runs against both VS Code `stable` and the `engines.vscode`
+  formats (the integration parity test checks `+validate-config`). Runs against both VS Code `stable` and the `engines.vscode`
   minimum (`1.91.0`); CI runs it under `xvfb-run`. `@vscode/test-electron`
   always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
   the `restrictedConfigurations` declaration and `ghostty.format.*` /

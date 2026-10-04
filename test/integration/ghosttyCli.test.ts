@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { unlink } from "node:fs/promises";
+import path from "node:path";
 import { configMetadata } from "@/core/schema";
 import {
   createValidationTempPath,
@@ -13,13 +14,25 @@ import { parseFontsOutput } from "@/ghostty/fonts";
 import { isGhosttyAvailableAsync, runGhosttyAsync } from "@/ghostty/ghostty";
 
 const available = await isGhosttyAvailableAsync();
-const tmpPath = createValidationTempPath();
+if (!available && process.env.CI) {
+  throw new Error("ghostty CLI not found; CI must install it for these tests");
+}
 
-async function validate(text: string) {
-  const result = await runGhosttyValidation(text, "", tmpPath);
+const tmpPath = createValidationTempPath();
+const fakeGhostty = path.resolve(
+  import.meta.dirname,
+  "../e2e/fixtures/bin/ghostty",
+);
+
+async function validate(text: string, executablePath = "") {
+  const { output, reportedErrors } = await runGhosttyValidation(
+    text,
+    executablePath,
+    tmpPath,
+  );
   return {
-    ...result,
-    diagnostics: parseGhosttyOutput(result.output, text.split("\n")),
+    reportedErrors,
+    diagnostics: parseGhosttyOutput(output, text.split("\n")),
   };
 }
 
@@ -53,6 +66,14 @@ describe.skipIf(!available)("real ghostty CLI", () => {
     ]);
   });
 
+  it("matches the E2E fake CLI's validate-config output", async () => {
+    const text =
+      "font-size = 14\nbogus-key = 1\ncursor-style = nope\nfont-sise = 12\ncursor-style = bar\n";
+    const fake = await validate(text, fakeGhostty);
+    const real = await validate(text);
+    expect(fake).toEqual(real);
+  });
+
   it("produces output the data loaders can parse", async () => {
     const [defaults, fonts, actions] = await Promise.all([
       runGhosttyAsync([
@@ -69,6 +90,8 @@ describe.skipIf(!available)("real ghostty CLI", () => {
 
   // Overlay values the installed Ghostty rejects, pending confirmation that
   // they exist upstream (keep) or are stale (remove from configMetadata).
+  // CI pins its Ghostty version in .github/workflows/ci.yml; revisit this
+  // list when bumping it.
   const newerThanInstalled = new Set([
     "macos-window-buttons = macos-native",
     ...["floating", "hidden", "dock"].flatMap((v) => [
