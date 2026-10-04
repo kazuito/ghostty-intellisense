@@ -137,7 +137,6 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     },
     "wait-after-command": { enum: [true, false] },
     scrollbar: { enum: ["system", "never"] },
-    link: { enum: [true, false] },
     "link-url": { enum: [true, false] },
     "link-previews": { enum: [true, false] },
     maximize: { enum: [true, false] },
