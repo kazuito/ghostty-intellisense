@@ -137,7 +137,9 @@ bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
   `ghostty +validate-config` and data commands to catch output-format and
   `configMetadata` drift. Kept out of `test/unit/` because bun's
   `mock.module` is process-global and the unit tests mock
-  `node:child_process`. Overlay values the installed Ghostty rejects go in
+  `node:child_process`; `bunfig.toml` sets the bare `bun test` root to
+  `test/unit`, so run these via `bun test ./test/integration` (the `./`
+  bypasses that root). Overlay values the installed Ghostty rejects go in
   its `newerThanInstalled` skip list only when they are confirmed upstream.
 - **E2E** (`test/e2e/`, config in `.vscode-test.mjs`): launches VS Code and
   drives the extension through `vscode.execute*Provider` commands. Each

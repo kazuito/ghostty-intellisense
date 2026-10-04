@@ -47,7 +47,7 @@
     "lint": "biome lint",
     "format": "biome format --write",
     "check": "biome check --write --unsafe && bun run typecheck",
-    "test": "bun test test/unit && bun test test/integration && bun run test:grammar",
+    "test": "bun test && bun test ./test/integration && bun run test:grammar",
     "test:grammar": "vscode-tmgrammar-test 'test/grammar/*.test.ghostty'",
     "test:e2e": "bun run bundle:dev && vscode-test",
     "typecheck": "tsc -b",

@@ -1,0 +1,4 @@
+[test]
+# Bare `bun test` runs unit tests only; integration needs its own process
+# (unit tests mock node:child_process) and E2E runs inside VS Code.
+root = "test/unit"
