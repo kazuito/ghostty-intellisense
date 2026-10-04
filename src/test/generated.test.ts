@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { additiveKeys, configMetadata, validKeys } from "@/core/schema";
+import { additiveKeys, configMetadata, optionByKey } from "@/core/schema";
 import { configKeys } from "@/generated/config-keys";
 
 const grammar = JSON.parse(
@@ -38,7 +38,7 @@ describe("hand-curated overlay stays in sync with generated keys", () => {
 
   it("every additive key exists in the config", () => {
     for (const key of additiveKeys) {
-      expect(validKeys.has(key)).toBe(true);
+      expect(optionByKey.has(key)).toBe(true);
     }
   });
 });

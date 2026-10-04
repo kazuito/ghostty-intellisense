@@ -1,15 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { additiveKeys, commaKeys, optionByKey, validKeys } from "@/core/schema";
+import { additiveKeys, optionByKey } from "@/core/schema";
 
 describe("schema indexes", () => {
   it("exposes fast key lookups", () => {
-    expect(validKeys.has("font-size")).toBe(true);
     expect(optionByKey.get("font-size")?.key).toBe("font-size");
   });
 
   it("preserves additive and comma-separated key metadata", () => {
     expect(additiveKeys.has("keybind")).toBe(true);
-    expect(commaKeys.has("app-notifications")).toBe(true);
+    expect(optionByKey.get("app-notifications")?.comma).toBe(true);
   });
 });
 

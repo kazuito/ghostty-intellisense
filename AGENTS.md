@@ -44,7 +44,7 @@ src/
 ├── server.ts       # LSP bootstrap; registers feature providers
 ├── features/       # hover, completion, codeActions, documentSymbols,
 │                   # diagnostics, formatter — each provider.ts + logic
-├── core/           # document.ts, schema.ts, types.ts, constants.ts
+├── core/           # document.ts, schema.ts, constants.ts
 ├── ghostty/        # CLI integration: defaults, fonts, colors, actions, reload
 └── generated/
     └── config-keys.ts   # Generated config keys + descriptions (do not edit)
@@ -85,8 +85,8 @@ written to `out/`; never hand-edit files there.
   line, keyed on the config key; powers Outline/breadcrumbs.
 - **Shared Schema** (`src/core/schema.ts`) — builds
   `ghosttyConfigOptions: ConfigEntry[]` by merging generated keys with the
-  `configMetadata` overlay; exports `additiveKeys`, `optionByKey`,
-  `validKeys`, `commaKeys`.
+  `configMetadata` overlay; exports `additiveKeys` and `optionByKey`
+  (key lookup; use `.has()` for validity and `.get(key)?.comma`).
 
 ## Syntax Highlighting
 

@@ -1,5 +1,16 @@
 import { configKeys } from "@/generated/config-keys";
-import type { ConfigEntry, ConfigMetadata, GhosttyConfigKey } from "./types";
+
+type GhosttyConfigKey = (typeof configKeys)[number]["key"];
+
+export type ConfigEntry = {
+  key: string;
+  desc: string;
+  enum?: Array<string | number | boolean>;
+  assets?: Array<"color" | "font">;
+  comma?: boolean;
+};
+
+type ConfigMetadata = Omit<ConfigEntry, "key" | "desc"> & { desc?: string };
 
 /**
  * Keys that can appear multiple times in a single config file (additive/list semantics).
@@ -302,28 +313,11 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "auto-update-channel": { enum: ["stable", "tip"] },
   };
 
-export const ghosttyConfigOptions: ConfigEntry[] = configKeys.map((entry) => {
-  const meta = configMetadata[entry.key];
-  const option: ConfigEntry = {
-    key: entry.key,
-    desc: meta?.desc ?? entry.desc,
-  };
-
-  if (meta?.enum) option.enum = meta.enum;
-  if (meta?.assets) option.assets = meta.assets;
-  if (meta?.comma) option.comma = meta.comma;
-
-  return option;
-});
+export const ghosttyConfigOptions: ConfigEntry[] = configKeys.map((entry) => ({
+  ...entry,
+  ...configMetadata[entry.key],
+}));
 
 export const optionByKey = new Map(
   ghosttyConfigOptions.map((option) => [option.key, option] as const),
-);
-
-export const validKeys = new Set<string>(
-  ghosttyConfigOptions.map((o) => o.key),
-);
-
-export const commaKeys = new Set<string>(
-  ghosttyConfigOptions.filter((o) => o.comma).map((o) => o.key),
 );
