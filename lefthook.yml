@@ -1,8 +1,12 @@
 pre-commit:
   parallel: true
   jobs:
+    - run: bun run format --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      glob: "*.{js,mjs,cjs,ts,json,jsonc}"
+      stage_fixed: true
     - run: bun run lint
     - run: bun run typecheck
+    - run: bun run test
 
 pre-push:
   parallel: true
