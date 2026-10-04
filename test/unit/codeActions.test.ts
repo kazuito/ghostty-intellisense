@@ -215,6 +215,19 @@ describe("code actions - invalid value (error)", () => {
     expect(replacements.length).toBeLessThanOrEqual(5);
   });
 
+  it("ignores hint diagnostics and treats non-string codes as missing", () => {
+    const content = "font-thicken = notabool";
+    const valueStart = content.indexOf("notabool");
+    const { getActions } = setupCodeActions(content);
+    const error = makeError(0, valueStart, valueStart + "notabool".length);
+    expect(
+      getActions(0, [{ ...error, severity: DiagnosticSeverity.Hint }]),
+    ).toEqual([]);
+    expect(getActions(0, [{ ...error, code: 42 }])).toEqual(
+      getActions(0, [error]),
+    );
+  });
+
   it("does not offer replacement actions for number key errors", () => {
     const content = "font-size = abc";
     const valueStart = content.indexOf("abc");

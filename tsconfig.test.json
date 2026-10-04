@@ -16,6 +16,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["test/unit/**/*"],
+  "include": ["test/unit/**/*", "test/integration/**/*"],
   "references": [{ "path": "./tsconfig.app.json" }]
 }
