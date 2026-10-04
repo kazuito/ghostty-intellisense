@@ -8,34 +8,16 @@ export interface SymbolDescriptor {
 }
 
 export function getDocumentSymbols(text: string): SymbolDescriptor[] {
-  return parseDocument(text).flatMap((line) => {
-    if (line.type === "entry") {
-      return [
-        {
-          name: line.key,
-          kind: "property" as const,
-          range: line.lineRange,
-          selectionRange: line.keyRange,
-        },
-      ];
-    }
-
-    if (line.type !== "unknown") return [];
-
-    const key = line.raw.trim();
-    if (!key) return [];
-
-    const keyStart = line.raw.indexOf(key);
-    return [
-      {
-        name: key,
-        kind: "property" as const,
-        range: line.lineRange,
-        selectionRange: {
-          start: { line: line.line, character: keyStart },
-          end: { line: line.line, character: keyStart + key.length },
-        },
-      },
-    ];
-  });
+  return parseDocument(text).flatMap((line) =>
+    "key" in line
+      ? [
+          {
+            name: line.key,
+            kind: "property" as const,
+            range: line.lineRange,
+            selectionRange: line.keyRange,
+          },
+        ]
+      : [],
+  );
 }

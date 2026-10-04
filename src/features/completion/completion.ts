@@ -99,14 +99,9 @@ export function getCompletionSuggestions(
   }
 
   const usedKeys = new Set(
-    parseDocument(documentText).flatMap((line) => {
-      if (line.type === "entry") return [line.key];
-      if (line.type === "unknown") {
-        const key = line.raw.trim();
-        return key ? [key] : [];
-      }
-      return [];
-    }),
+    parseDocument(documentText).flatMap((line) =>
+      "key" in line ? [line.key] : [],
+    ),
   );
 
   const prefix = lineUpToCursor.trimStart();

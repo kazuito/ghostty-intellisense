@@ -10,6 +10,7 @@ describe("document parser", () => {
     });
     expect(parseLine("font-size")).toEqual({
       type: "unknown",
+      key: "font-size",
       raw: "font-size",
     });
     expect(parseLine("font-size = 14")).toMatchObject({

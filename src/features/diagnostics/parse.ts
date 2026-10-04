@@ -1,18 +1,14 @@
-import { CONFIG_KEY_VALUE_SEPARATOR } from "@/core/constants";
+import { parseDocumentLine, parseLine, rangeOf } from "@/core/document";
 import { UNKNOWN_FIELD_MESSAGE, type ValidationDiagnostic } from "./types";
 
 const LOCATED_OUTPUT_RE = /^.+?:(\d+):([^:]+):\s*(.+)$/;
 const UNLOCATED_OUTPUT_RE = /^([A-Za-z0-9_-]+):\s*(.+)$/;
 
 function findKeyLine(lines: string[], key: string): number {
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line) continue;
-    const eqIndex = line.indexOf(CONFIG_KEY_VALUE_SEPARATOR);
-    const lineKey = (eqIndex >= 0 ? line.slice(0, eqIndex) : line).trim();
-    if (lineKey === key) return i;
-  }
-  return -1;
+  return lines.findIndex((line) => {
+    const parsed = parseLine(line);
+    return "key" in parsed && parsed.key === key;
+  });
 }
 
 function buildDiagnostic(
@@ -21,33 +17,17 @@ function buildDiagnostic(
   field: string,
   message: string,
 ): ValidationDiagnostic | null {
-  if (lineNum < 0 || lineNum >= lines.length) return null;
   const line = lines[lineNum];
   if (!line) return null;
 
-  const eqIndex = line.indexOf(CONFIG_KEY_VALUE_SEPARATOR);
+  const parsed = parseDocumentLine(line, lineNum);
   const isUnknownField = message === UNKNOWN_FIELD_MESSAGE;
-  let start: number;
-  let end: number;
-
-  if (!isUnknownField && eqIndex >= 0) {
-    const trimmedValue = line.slice(eqIndex + 1).trim();
-    start = trimmedValue
-      ? line.indexOf(trimmedValue, eqIndex + 1)
-      : eqIndex + 1;
-    end = trimmedValue ? start + trimmedValue.length : start;
-  } else {
-    const keyInLine = eqIndex >= 0 ? line.slice(0, eqIndex) : line;
-    const keyIdx = keyInLine.indexOf(field);
-    start = Math.max(0, keyIdx >= 0 ? keyIdx : line.indexOf(field));
-    end = start + field.length;
-  }
 
   return {
-    range: {
-      start: { line: lineNum, character: start },
-      end: { line: lineNum, character: end },
-    },
+    range:
+      !isUnknownField && parsed.type === "entry"
+        ? parsed.valueRange
+        : rangeOf(lineNum, Math.max(0, line.indexOf(field)), field.length),
     message,
     severity: "error",
     code: isUnknownField ? "unknown-key" : "invalid-value",

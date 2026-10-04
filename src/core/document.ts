@@ -21,38 +21,19 @@ export type ParsedLine =
       raw: string;
       eqIndex: number;
     }
-  | { type: "unknown"; raw: string };
+  /** A line without a usable `=`; `key` is the trimmed line, e.g. a bare key. */
+  | { type: "unknown"; key: string; raw: string };
+
+type LineInfo = { line: number; raw: string; lineRange: Range };
 
 export type ParsedDocumentLine =
-  | {
-      type: "blank";
-      line: number;
-      raw: string;
-      lineRange: Range;
-    }
-  | {
-      type: "comment";
-      line: number;
-      raw: string;
-      lineRange: Range;
-    }
-  | {
-      type: "unknown";
-      line: number;
-      raw: string;
-      lineRange: Range;
-    }
-  | {
-      type: "entry";
-      line: number;
-      raw: string;
-      key: string;
-      rawValue: string;
-      eqIndex: number;
-      lineRange: Range;
-      keyRange: Range;
-      valueRange: Range | null;
-    };
+  | (LineInfo & { type: "blank" | "comment" })
+  | (LineInfo & { type: "unknown"; key: string; keyRange: Range })
+  | (LineInfo &
+      Extract<ParsedLine, { type: "entry" }> & {
+        keyRange: Range;
+        valueRange: Range;
+      });
 
 export function parseLine(raw: string): ParsedLine {
   const trimmed = raw.trimStart();
@@ -61,12 +42,17 @@ export function parseLine(raw: string): ParsedLine {
     return { type: "comment", raw };
 
   const eqIndex = raw.indexOf(CONFIG_KEY_VALUE_SEPARATOR);
-  if (eqIndex < 0) return { type: "unknown", raw };
-
-  const key = raw.slice(0, eqIndex).trim();
-  if (!key) return { type: "unknown", raw };
+  const key = eqIndex < 0 ? "" : raw.slice(0, eqIndex).trim();
+  if (!key) return { type: "unknown", key: raw.trim(), raw };
 
   return { type: "entry", key, rawValue: raw.slice(eqIndex + 1), raw, eqIndex };
+}
+
+export function rangeOf(line: number, start: number, length: number): Range {
+  return {
+    start: { line, character: start },
+    end: { line, character: start + length },
+  };
 }
 
 export function parseDocumentLine(
@@ -74,17 +60,18 @@ export function parseDocumentLine(
   line: number,
 ): ParsedDocumentLine {
   const parsed = parseLine(raw);
-  const lineRange = {
-    start: { line, character: 0 },
-    end: { line, character: raw.length },
-  };
+  const lineRange = rangeOf(line, 0, raw.length);
 
-  if (parsed.type !== "entry") {
-    return { ...parsed, line, raw, lineRange };
+  if (parsed.type === "blank" || parsed.type === "comment") {
+    return { type: parsed.type, line, raw, lineRange };
   }
 
-  const keyStart = raw.indexOf(parsed.key);
-  const value = raw.slice(parsed.eqIndex + 1).trim();
+  const keyRange = rangeOf(line, raw.indexOf(parsed.key), parsed.key.length);
+  if (parsed.type === "unknown") {
+    return { ...parsed, line, lineRange, keyRange };
+  }
+
+  const value = parsed.rawValue.trim();
   const valueStart = value
     ? raw.indexOf(value, parsed.eqIndex + 1)
     : parsed.eqIndex + 1;
@@ -93,14 +80,8 @@ export function parseDocumentLine(
     ...parsed,
     line,
     lineRange,
-    keyRange: {
-      start: { line, character: keyStart },
-      end: { line, character: keyStart + parsed.key.length },
-    },
-    valueRange: {
-      start: { line, character: valueStart },
-      end: { line, character: value ? valueStart + value.length : valueStart },
-    },
+    keyRange,
+    valueRange: rangeOf(line, valueStart, value.length),
   };
 }
 

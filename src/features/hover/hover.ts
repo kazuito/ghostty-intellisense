@@ -10,15 +10,12 @@ export interface HoverContent {
 
 export function getHoverContent(line: string): HoverContent | null {
   const parsed = parseLine(line);
-  if (parsed.type !== "entry" && parsed.type !== "unknown") return null;
+  if (!("key" in parsed)) return null;
 
-  const key = parsed.type === "entry" ? parsed.key : parsed.raw.trim();
-  if (!key) return null;
-
-  const option = optionByKey.get(key);
+  const option = optionByKey.get(parsed.key);
   if (!option) return null;
 
-  const defaultVal = ghosttyDefaults.get(key);
+  const defaultVal = ghosttyDefaults.get(option.key);
   const defaultLine =
     defaultVal !== undefined
       ? `\n\n**Default:** ${defaultVal === "" ? "*(empty)*" : `\`${defaultVal}\``}`

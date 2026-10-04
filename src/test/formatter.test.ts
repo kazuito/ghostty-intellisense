@@ -264,6 +264,7 @@ describe("parseLine", () => {
   it("returns unknown for line without '='", () =>
     expect(parseLine("no-equals-here")).toEqual({
       type: "unknown",
+      key: "no-equals-here",
       raw: "no-equals-here",
     }));
 });
@@ -282,7 +283,7 @@ describe("formatLine", () => {
   it("unknown line → trimmed when trimWhitespace is true", () =>
     expect(
       formatLine(
-        { type: "unknown", raw: "  bad line  " },
+        { type: "unknown", key: "bad line", raw: "  bad line  " },
         opts({ trimWhitespace: true }),
       ),
     ).toBe("bad line"));
@@ -290,7 +291,7 @@ describe("formatLine", () => {
   it("unknown line → preserved when trimWhitespace is false", () =>
     expect(
       formatLine(
-        { type: "unknown", raw: "  bad line  " },
+        { type: "unknown", key: "bad line", raw: "  bad line  " },
         opts({ trimWhitespace: false }),
       ),
     ).toBe("  bad line  "));

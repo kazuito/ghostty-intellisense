@@ -1,5 +1,4 @@
-import { CONFIG_KEY_VALUE_SEPARATOR } from "@/core/constants";
-import type { Range } from "@/core/document";
+import { parseDocumentLine, type Range } from "@/core/document";
 import { ghosttyConfigOptions, optionByKey } from "@/core/schema";
 
 export type DiagnosticSeverity = "warning" | "information" | "error";
@@ -51,15 +50,12 @@ function levenshtein(a: string, b: string): number {
   return dp[m][n] as number;
 }
 
-export function closestKeys(
-  input: string,
-  maxResults = MAX_KEY_SUGGESTIONS,
-): string[] {
+export function closestKeys(input: string): string[] {
   return schemaKeys
     .map((key) => ({ key, dist: levenshtein(input, key) }))
     .filter(({ dist }) => dist <= MAX_SUGGESTION_DISTANCE)
     .sort((a, b) => a.dist - b.dist)
-    .slice(0, maxResults)
+    .slice(0, MAX_KEY_SUGGESTIONS)
     .map(({ key }) => key);
 }
 
@@ -84,21 +80,14 @@ export function getCodeActionSuggestions(
             end: { line: lineIndex, character: line.length },
           };
 
-    if (diagnostic.code === "unknown-key") {
-      const eqIndex = line.indexOf(CONFIG_KEY_VALUE_SEPARATOR);
-      const keyPart = eqIndex >= 0 ? line.slice(0, eqIndex) : line;
-      const key = keyPart.trim();
-      if (key) {
-        const keyStart = line.indexOf(key);
-        const keyRange = {
-          start: { line: lineIndex, character: keyStart },
-          end: { line: lineIndex, character: keyStart + key.length },
-        };
+    const parsed = parseDocumentLine(line, lineIndex);
 
-        for (const suggestion of closestKeys(key)) {
+    if (diagnostic.code === "unknown-key") {
+      if ("key" in parsed) {
+        for (const suggestion of closestKeys(parsed.key)) {
           suggestions.push({
             title: `Did you mean '${suggestion}'?`,
-            edit: { range: keyRange, newText: suggestion },
+            edit: { range: parsed.keyRange, newText: suggestion },
           });
         }
       }
@@ -118,14 +107,8 @@ export function getCodeActionSuggestions(
       continue;
     }
 
-    const eqIndex = line.indexOf(CONFIG_KEY_VALUE_SEPARATOR);
-    if (eqIndex < 0) continue;
-
-    const key = line.slice(0, eqIndex).trim();
-    const option = optionByKey.get(key);
-    if (!option) continue;
-
-    const values = option.enum;
+    if (parsed.type !== "entry") continue;
+    const values = optionByKey.get(parsed.key)?.enum;
     if (!values) continue;
 
     for (const value of values.slice(0, MAX_ENUM_REPLACEMENT_SUGGESTIONS)) {

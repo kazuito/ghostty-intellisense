@@ -1,51 +1,28 @@
 import { parseDocument } from "@/core/document";
-import { additiveKeys, validKeys } from "@/core/schema";
-import {
-  DUPLICATE_KEY_MESSAGE_PREFIX,
-  type ValidationDiagnostic,
-} from "./types";
+import { additiveKeys, optionByKey } from "@/core/schema";
+import type { ValidationDiagnostic } from "./types";
 
 export function validateInProcess(text: string): ValidationDiagnostic[] {
   const diagnostics: ValidationDiagnostic[] = [];
   const seenKeys = new Map<string, number>();
 
   for (const line of parseDocument(text)) {
-    const key =
-      line.type === "entry"
-        ? line.key
-        : line.type === "unknown"
-          ? line.raw.trim()
-          : "";
-    if (!key) continue;
+    if (!("key" in line)) continue;
+    const { key } = line;
+    if (!optionByKey.has(key) || additiveKeys.has(key)) continue;
 
-    if (!validKeys.has(key)) continue;
-
-    const keyRange =
-      line.type === "entry"
-        ? line.keyRange
-        : {
-            start: {
-              line: line.line,
-              character: line.raw.indexOf(key),
-            },
-            end: {
-              line: line.line,
-              character: line.raw.indexOf(key) + key.length,
-            },
-          };
-
-    if (!additiveKeys.has(key)) {
-      if (seenKeys.has(key)) {
-        diagnostics.push({
-          range: keyRange,
-          message: `${DUPLICATE_KEY_MESSAGE_PREFIX}'${key}' (first defined on line ${(seenKeys.get(key) as number) + 1})`,
-          severity: "information",
-          code: "duplicate-key",
-        });
-      } else {
-        seenKeys.set(key, line.line);
-      }
+    const firstLine = seenKeys.get(key);
+    if (firstLine === undefined) {
+      seenKeys.set(key, line.line);
+      continue;
     }
+
+    diagnostics.push({
+      range: line.keyRange,
+      message: `Duplicate key '${key}' (first defined on line ${firstLine + 1})`,
+      severity: "information",
+      code: "duplicate-key",
+    });
   }
 
   return diagnostics;
