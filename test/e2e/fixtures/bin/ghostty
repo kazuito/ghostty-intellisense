@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+// Fake Ghostty CLI for E2E tests. Values are deliberately impossible for a
+// real install (font-size 42, "Fake Mono") so tests can prove it is in use.
+const { readFileSync } = require("node:fs");
+
+const [command, ...rest] = process.argv.slice(2);
+const cursorStyles = ["bar", "block", "underline", "block_hollow"];
+const unknownKeys = new Set(["bogus-key", "font-sise"]);
+
+const outputs = {
+  "--version": "Ghostty 0.0.0-fake\n",
+  "+show-config": "font-size = 42\ncursor-style = block\nfont-family = \n",
+  "+list-fonts": "Fake Mono\n  Fake Mono Regular\n  Fake Mono Bold\n\nFake Sans\n  Fake Sans Regular\n",
+  "+list-actions": "new_tab:\n  Open a new tab.\n\nclose_surface:\n  Close the current surface.\n",
+};
+
+if (command in outputs) {
+  process.stdout.write(outputs[command]);
+  process.exit(0);
+}
+
+if (command === "+validate-config") {
+  const path = rest.find((a) => a.startsWith("--config-file=")).slice(14);
+  const errors = readFileSync(path, "utf8")
+    .split("\n")
+    .flatMap((line, i) => {
+      const match = line.match(/^\s*([^#=\s][^=]*?)\s*=\s*(.*?)\s*$/);
+      if (!match) return [];
+      const [, key, value] = match;
+      const at = `${path}:${i + 1}:${key}`;
+      if (unknownKeys.has(key)) return [`${at}: unknown field`];
+      if (key === "cursor-style" && !cursorStyles.includes(value)) {
+        return [`${at}: invalid value "${value}", valid values are: ${cursorStyles.join(", ")}`];
+      }
+      return [];
+    });
+  process.stdout.write(errors.map((e) => `${e}\n`).join(""));
+  process.exit(errors.length ? 1 : 0);
+}
+
+process.exit(2);

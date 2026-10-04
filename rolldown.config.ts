@@ -1,3 +1,4 @@
+import { globSync } from "node:fs";
 import path from "node:path";
 import { defineConfig, type RolldownOptions } from "rolldown";
 
@@ -29,4 +30,11 @@ export default defineConfig([
     external: ["vscode"],
   }),
   bundle("src/server.ts", "out/server.js"),
+  ...(isProd
+    ? []
+    : globSync("test/e2e/*.test.ts").map((input) =>
+        bundle(input, `out/e2e/${path.basename(input, ".ts")}.js`, {
+          external: ["vscode"],
+        }),
+      )),
 ]);

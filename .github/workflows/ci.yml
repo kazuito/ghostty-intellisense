@@ -13,7 +13,7 @@ concurrency:
 jobs:
   CI:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -35,3 +35,6 @@ jobs:
 
       - name: Test
         run: bun run test
+
+      - name: E2E
+        run: xvfb-run -a bun run test:e2e

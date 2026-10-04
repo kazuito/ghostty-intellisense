@@ -49,7 +49,12 @@ src/
 └── generated/
     └── config-keys.ts   # Generated config keys + descriptions (do not edit)
 
-src/test/           # bun test suite (centralized), one file per feature/module
+test/
+├── unit/           # bun test suite, one file per feature/module, plus
+│                   # fast-check properties in properties.test.ts
+├── integration/    # bun tests against the real Ghostty CLI (skipped if absent)
+├── e2e/            # VS Code E2E (mocha tdd) against a fake Ghostty CLI
+└── grammar/        # vscode-tmgrammar-test scope assertions
 ```
 
 Dependency direction is one-way: `generated → core → features → ghostty`,
@@ -99,9 +104,9 @@ The key alternation and enum-value alternation in the grammar are
 **generated** by `scripts/gen-config.ts` — run `bun run gen:config` after key
 or enum changes rather than hand-editing those regexes. Other token
 patterns (strings, numbers, colors, paths) are hand-maintained.
-Scope assertions for those live in `src/test/grammar.test.ghostty`
+Scope assertions for those live in `test/grammar/grammar.test.ghostty`
 (`vscode-tmgrammar-test` syntax); extend it when touching token patterns. A
-drift check (`src/test/generated.test.ts`) asserts the grammar key set
+drift check (`test/unit/generated.test.ts`) asserts the grammar key set
 matches the generated key set.
 
 ## Build And Verification
@@ -114,13 +119,37 @@ bun run typecheck  # Type-check without emitting
 bun run lint       # Biome lint
 bun run format     # Biome format --write
 bun run check      # Biome check --write --unsafe + typecheck
-bun run test       # bun test suite under src/test/, then test:grammar
-bun run test:grammar # Grammar scope assertions in src/test/*.test.ghostty
+bun run test       # unit, then CLI integration, then test:grammar
+bun run test:grammar # Grammar scope assertions in test/grammar/*.test.ghostty
+bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
 ```
 
 `prepare` runs `lefthook install` (hooks live in `lefthook.yml`);
 `rolldown.config.ts` controls the client/server bundles emitted into `out/`.
 `examples/` holds sample configs for manual verification in VSCode.
+
+### Test layers
+
+- **Unit + property** (`test/unit/`): `properties.test.ts` uses fast-check
+  for invariants (formatter idempotency, ranges in-bounds, no throws).
+  Paste a reported counterexample into an example test when fixing it.
+- **CLI integration** (`test/integration/`): runs the real
+  `ghostty +validate-config` and data commands to catch output-format and
+  `configMetadata` drift. Kept out of `test/unit/` because bun's
+  `mock.module` is process-global and the unit tests mock
+  `node:child_process`. Overlay values the installed Ghostty rejects go in
+  its `newerThanInstalled` skip list only when they are confirmed upstream.
+- **E2E** (`test/e2e/`, config in `.vscode-test.mjs`): launches VS Code and
+  drives the extension through `vscode.execute*Provider` commands. Each
+  suite calls `useFakeGhostty()`, which points `ghostty.executablePath` at
+  `test/e2e/fixtures/bin/ghostty` and waits for its impossible `font-size`
+  default (`42`) so tests can never pass against a real install. Extend the
+  fake when E2E needs new CLI behavior; keep its output in Ghostty's real
+  formats. Runs against both VS Code `stable` and the `engines.vscode`
+  minimum (`1.91.0`); CI runs it under `xvfb-run`. `@vscode/test-electron`
+  always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
+  the `restrictedConfigurations` declaration and `ghostty.format.*` /
+  `DEFAULT_FORMATTER_OPTIONS` parity instead.
 
 ## Working Rules For Future Changes
 
@@ -132,7 +161,7 @@ bun run test:grammar # Grammar scope assertions in src/test/*.test.ghostty
   `bun run gen:config` reads it to regenerate the grammar's enum alternation.
 - If a key is valid multiple times in one file, add it to `additiveKeys`.
 - If schema changes affect completion, diagnostics, formatter, or code
-  actions, update the relevant test coverage in `src/test/`.
+  actions, update the relevant test coverage in `test/unit/`.
 - New LSP features get their own `src/features/<feature>/` (provider.ts +
   logic), registered in `src/server.ts`. Shared logic goes in `src/core/`.
 - If you add or rename formatter settings, update `package.json` and
