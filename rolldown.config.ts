@@ -14,7 +14,6 @@ function bundle(
     resolve: {
       alias: { "@": path.resolve(import.meta.dirname, "src") },
     },
-    ...(isProd && { treeshake: true }),
     ...overrides,
     output: {
       file,
