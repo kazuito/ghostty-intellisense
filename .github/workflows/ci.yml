@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -12,7 +13,8 @@ concurrency:
 
 jobs:
   CI:
-    runs-on: ubuntu-latest
+    # Pinned: the Ghostty .deb below is built per Ubuntu release.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
@@ -32,6 +34,17 @@ jobs:
 
       - name: Bundle
         run: bun run bundle
+
+      - name: Install Ghostty
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/ghostty.deb" "$GHOSTTY_DEB_URL"
+          sudo apt-get update -qq
+          sudo apt-get install -y "$RUNNER_TEMP/ghostty.deb"
+          ghostty --version
+        env:
+          # Bumping this may change which overlay values the integration
+          # tests' `newerThanInstalled` list needs to skip.
+          GHOSTTY_DEB_URL: https://github.com/mkasberg/ghostty-ubuntu/releases/download/1.3.1-0-ppa2/ghostty_1.3.1-0.ppa2_amd64_24.04.deb
 
       - name: Test
         run: bun run test
