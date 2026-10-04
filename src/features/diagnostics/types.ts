@@ -5,9 +5,6 @@ export type DiagnosticSeverity = "warning" | "information" | "error";
 /** Literal message ghostty's `+validate-config` emits for an unrecognized key. */
 export const UNKNOWN_FIELD_MESSAGE = "unknown field";
 
-/** Prefix of the in-process duplicate-key diagnostic message. */
-export const DUPLICATE_KEY_MESSAGE_PREFIX = "Duplicate key ";
-
 /**
  * Stable identifier for what kind of problem a diagnostic represents,
  * independent of its human-readable message. Code actions dispatch on this
