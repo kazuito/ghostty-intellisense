@@ -147,8 +147,8 @@ function detectEol(text: string): "\n" | "\r\n" {
 
 export function formatDocument(text: string, opts: FormatterOptions): string {
   const eol = detectEol(text);
-  const hadTrailingNewline = /\r?\n$/.test(text);
-  const lines = text.split(/\r\n|\n/);
+  const hadTrailingNewline = /\n$/.test(text);
+  const lines = text.split(/\r*\n/);
 
   if (hadTrailingNewline && lines[lines.length - 1] === "") {
     lines.pop();

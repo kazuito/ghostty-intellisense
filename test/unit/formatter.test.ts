@@ -483,6 +483,13 @@ describe("formatDocument", () => {
     );
   });
 
+  it("folds stray carriage returns before a newline into the line ending", () => {
+    const input = "# a\r\r\nb = 1\r\n";
+    const once = formatDocument(input, opts({ trimWhitespace: false }));
+    expect(once).toBe("# a\r\nb = 1\r\n");
+    expect(formatDocument(once, opts({ trimWhitespace: false }))).toBe(once);
+  });
+
   it("is idempotent when re-formatting its own CRLF output", () => {
     const input = "font-size = 14\r\n# comment\r\nfont-thicken=TRUE\r\n";
     const once = formatDocument(input, opts());
