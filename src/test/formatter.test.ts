@@ -1,32 +1,26 @@
-import { describe, expect, it, mock } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import type {
   DocumentFormattingParams,
   TextEdit,
 } from "vscode-languageserver/node";
-import type { FormatterOptions } from "@/features/formatter";
-import * as formatter from "@/features/formatter";
+import { parseLine } from "@/core/document";
 import {
   DEFAULT_FORMATTER_OPTIONS,
+  type FormatterOptions,
   formatBoolean,
   formatColor,
   formatCommaSeparated,
+  formatDocument,
   formatLine,
   formatPaletteValue,
   isHexColor,
-  parseLine,
-} from "@/features/formatter";
+} from "@/features/formatter/formatter";
 import { registerFormatterProvider } from "@/features/formatter/provider";
 import {
   createDocument,
   createMockConnection,
   createMockDocuments,
 } from "./helpers";
-
-// Spy on formatDocument, forwarding to the real implementation by default, so
-// the provider's catch branch can be exercised with a one-time thrown error
-// without touching the many formatDocument(...) assertions above.
-const formatDocument = mock(formatter.formatDocument);
-mock.module("@/features/formatter", () => ({ ...formatter, formatDocument }));
 
 // Shorthand: merge overrides onto defaults
 function opts(overrides: Partial<FormatterOptions> = {}): FormatterOptions {
@@ -521,22 +515,5 @@ describe("registerFormatterProvider", () => {
     const { documents, format } = setupFormatter("font-thicken = true\n");
     documents.get.mockReturnValueOnce(undefined);
     expect(await format("file:///missing.ghostty")).toBeNull();
-  });
-
-  it("logs and surfaces an error, returning null, when formatting throws", async () => {
-    const { connection, format } = setupFormatter("font-thicken=TRUE\n");
-    formatDocument.mockImplementationOnce(() => {
-      throw new Error("boom");
-    });
-
-    const result = await format();
-
-    expect(result).toBeNull();
-    expect(connection.console.error).toHaveBeenCalledWith(
-      expect.stringContaining("boom"),
-    );
-    expect(connection.window.showErrorMessage).toHaveBeenCalledWith(
-      expect.stringContaining("boom"),
-    );
   });
 });

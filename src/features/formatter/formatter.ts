@@ -1,19 +1,35 @@
-/**
- * Ghostty config file formatter.
- *
- * The pure formatting functions have no LSP dependencies and are designed to
- * be extractable into a standalone package in the future.
- */
-
 import { CONFIG_KEY_VALUE_SEPARATOR } from "@/core/constants";
 import { type ParsedLine, parseLine } from "@/core/document";
-import { commaKeys, optionByKey, validKeys } from "@/core/schema";
-import { DEFAULT_FORMATTER_OPTIONS, type FormatterOptions } from "./types";
+import { optionByKey } from "@/core/schema";
+
+export interface FormatterOptions {
+  /** Spacing around "=". "space" → `key = value`; "no-space" → `key=value`; "preserve" → leave as-is. */
+  equalSpacing: "space" | "no-space" | "preserve";
+  /** How to handle runs of consecutive blank lines. */
+  blankLines: "collapse" | "preserve";
+  /** Case normalization applied to hex color digits. */
+  colorCase: "uppercase" | "lowercase" | "preserve";
+  /** Whether to ensure hex colors are prefixed with "#". */
+  colorAddPrefix: boolean;
+  /** Case normalization for boolean literals. */
+  booleanCase: "lowercase" | "preserve";
+  /** Spacing after commas in comma-separated values. */
+  commaSpacing: "space" | "no-space" | "preserve";
+  /** Remove leading and trailing whitespace from config lines. */
+  trimWhitespace: boolean;
+}
+
+export const DEFAULT_FORMATTER_OPTIONS: FormatterOptions = {
+  equalSpacing: "space",
+  blankLines: "collapse",
+  colorCase: "uppercase",
+  colorAddPrefix: true,
+  booleanCase: "lowercase",
+  commaSpacing: "space",
+  trimWhitespace: true,
+};
 
 const HEX_RE = /^#?[0-9A-Fa-f]{6}$/;
-
-export type { FormatterOptions, ParsedLine };
-export { DEFAULT_FORMATTER_OPTIONS, parseLine };
 
 export function isHexColor(token: string): boolean {
   return HEX_RE.test(token);
@@ -85,20 +101,15 @@ export function formatValue(
 
   if (key === "palette") return formatPaletteValue(value, opts);
 
-  const isColorKey = optionByKey.get(key)?.assets?.includes("color") ?? false;
-  if (isColorKey) {
-    return commaKeys.has(key)
-      ? formatCommaSeparated(value, opts, (t) => formatColor(t, opts))
-      : formatColor(value, opts);
-  }
+  const option = optionByKey.get(key);
+  if (!option) return value;
 
-  if (commaKeys.has(key)) {
-    return formatCommaSeparated(value, opts, (t) => formatBoolean(t, opts));
-  }
-
-  if (!validKeys.has(key)) return value;
-
-  return formatBoolean(value, opts);
+  const formatToken = option.assets?.includes("color")
+    ? (token: string) => formatColor(token, opts)
+    : (token: string) => formatBoolean(token, opts);
+  return option.comma
+    ? formatCommaSeparated(value, opts, formatToken)
+    : formatToken(value);
 }
 
 export function formatLine(parsed: ParsedLine, opts: FormatterOptions): string {

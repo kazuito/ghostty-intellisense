@@ -10,7 +10,7 @@ import {
   DEFAULT_FORMATTER_OPTIONS,
   type FormatterOptions,
   formatDocument,
-} from ".";
+} from "./formatter";
 
 export function registerFormatterProvider(
   connection: Connection,
@@ -30,28 +30,14 @@ export function registerFormatterProvider(
     };
 
     const original = doc.getText();
-    let formatted: string;
-    try {
-      formatted = formatDocument(original, opts);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      connection.console.error(`ghostty formatter failed: ${message}`);
-      connection.window.showErrorMessage(
-        `Ghostty formatter failed: ${message}`,
-      );
-      return null;
-    }
-
+    const formatted = formatDocument(original, opts);
     if (formatted === original) return [];
 
-    const lastLine = doc.lineCount - 1;
-    const lastLineLength = doc.getText({
-      start: { line: lastLine, character: 0 },
-      end: { line: lastLine, character: Number.MAX_SAFE_INTEGER },
-    }).length;
-
     return [
-      TextEdit.replace(Range.create(0, 0, lastLine, lastLineLength), formatted),
+      TextEdit.replace(
+        Range.create(doc.positionAt(0), doc.positionAt(original.length)),
+        formatted,
+      ),
     ];
   });
 }

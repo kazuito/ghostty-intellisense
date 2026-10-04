@@ -35,7 +35,7 @@ files ending in `.ghostty`.
 
 Each feature folder pairs `provider.ts` (LSP adapter) with its logic.
 Single-file features keep one logic file named after the feature;
-multi-file features (diagnostics, formatter) keep split modules plus an
+multi-file features (diagnostics) keep split modules plus an
 `index.ts` barrel.
 
 ```text
