@@ -47,7 +47,8 @@
     "lint": "biome lint",
     "format": "biome format --write",
     "check": "biome check --write --unsafe && bun run typecheck",
-    "test": "bun test src/test",
+    "test": "bun test src/test && bun run test:grammar",
+    "test:grammar": "vscode-tmgrammar-test 'src/test/*.test.ghostty'",
     "typecheck": "tsc -b",
     "prepare": "lefthook install"
   },
@@ -63,7 +64,8 @@
     "@types/vscode": "^1.91.0",
     "lefthook": "^2.1.16",
     "rolldown": "^1.2.11",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vscode-tmgrammar-test": "^0.1.3"
   },
   "contributes": {
     "languages": [

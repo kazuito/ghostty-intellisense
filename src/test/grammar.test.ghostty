@@ -1,0 +1,50 @@
+# SYNTAX TEST "source.ghostty" "ghostty-config grammar"
+
+  # indented comment
+# ^^^^^^^^^^^^^^^^^^ comment.line.number-sign.ghostty
+
+cursor-style-blink = true
+# <------------------ support.type.property-name.ghostty
+#                  ^ keyword.operator.assignment.ghostty
+#                    ^^^^ constant.language.boolean.ghostty
+
+cursor-style = block
+#              ^^^^^ constant.language.enum.ghostty
+
+undo-timeout = 1h 30m
+#              ^^ constant.numeric.duration.ghostty
+#                 ^^^ constant.numeric.duration.ghostty
+
+title = "a \"b\" c"
+#       ^ punctuation.definition.string.begin.ghostty
+#          ^^ constant.character.escape.ghostty
+#                 ^ punctuation.definition.string.end.ghostty
+
+title = foo#bar
+#       ^^^^^^^ string.unquoted.ghostty
+
+palette = 0=#1d1f21
+#         ^ meta.sub-assignment.ghostty entity.name.function.ghostty
+#          ^ keyword.operator.assignment.ghostty
+#           ^^^^^^^ constant.other.color.rgb-value.ghostty
+
+keybind = ctrl+a=new_tab
+#         ^^^^^^ entity.name.function.ghostty
+#                ^^^^^^^ string.unquoted.ghostty
+
+font-codepoint-map = U+E000-U+F8FF=Symbols Nerd Font
+#                    ^^^^^^^^^^^^^ entity.name.function.ghostty constant.other.unicode.codepoint.ghostty
+#                                  ^^^^^^^^^^^^^^^^^ meta.sub-assignment.ghostty
+
+env = PATH=/usr/bin
+#     ^^^^ entity.name.function.ghostty
+#          ^^^^^^^^ meta.sub-assignment.ghostty string.unquoted.path.ghostty
+
+unknown-key = 1
+# <----------- - support.type.property-name.ghostty
+
+title = "unclosed
+#       ^^^^^^^^^ string.quoted.double.ghostty
+font-size = 14
+# <--------- support.type.property-name.ghostty - string.quoted.double.ghostty
+#           ^^ constant.numeric.integer.ghostty - string.quoted.double.ghostty

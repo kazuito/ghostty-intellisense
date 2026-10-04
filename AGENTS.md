@@ -98,7 +98,9 @@ settings.
 The key alternation and enum-value alternation in the grammar are
 **generated** by `scripts/gen-config.ts` — run `bun run gen:config` after key
 or enum changes rather than hand-editing those regexes. Other token
-patterns (strings, numbers, colors, paths) are hand-maintained. A
+patterns (strings, numbers, colors, paths) are hand-maintained.
+Scope assertions for those live in `src/test/grammar.test.ghostty`
+(`vscode-tmgrammar-test` syntax); extend it when touching token patterns. A
 drift check (`src/test/generated.test.ts`) asserts the grammar key set
 matches the generated key set.
 
@@ -112,7 +114,8 @@ bun run typecheck  # Type-check without emitting
 bun run lint       # Biome lint
 bun run format     # Biome format --write
 bun run check      # Biome check --write --unsafe + typecheck
-bun run test       # bun test suite under src/test/
+bun run test       # bun test suite under src/test/, then test:grammar
+bun run test:grammar # Grammar scope assertions in src/test/*.test.ghostty
 ```
 
 `prepare` runs `lefthook install` (hooks live in `lefthook.yml`);
