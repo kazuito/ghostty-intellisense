@@ -101,11 +101,11 @@ async function collectEnumValues(): Promise<string[]> {
     pathToFileURL(schemaPath).href
   )) as typeof import("../src/core/schema");
 
-  return [...new Set(ghosttyConfigOptions.flatMap((o) => o.enum ?? []))]
-    .map(String)
-    .sort((a, b) =>
-      a.length === b.length ? a.localeCompare(b) : b.length - a.length,
-    );
+  return [
+    ...new Set(ghosttyConfigOptions.flatMap((o) => (o.enum ?? []).map(String))),
+  ].sort((a, b) =>
+    a.length === b.length ? a.localeCompare(b) : b.length - a.length,
+  );
 }
 
 function updateGrammar(keys: string[], enumValues: string[]): void {
