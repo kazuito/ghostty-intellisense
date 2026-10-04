@@ -1,5 +1,5 @@
+import { describe, expect, it } from "bun:test";
 import { delimiter } from "node:path";
-import { describe, expect, it } from "vitest";
 import { buildGhosttyPathEnv } from "@/ghostty/ghostty";
 
 describe("buildGhosttyPathEnv", () => {

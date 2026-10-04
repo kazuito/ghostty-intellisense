@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "bun:test";
 import { ghosttyActions, loadGhosttyActionsAsync } from "@/ghostty/actions";
 import { ghosttyDefaults, loadGhosttyDefaultsAsync } from "@/ghostty/defaults";
 import { ghosttyFonts, loadGhosttyFontsAsync } from "@/ghostty/fonts";

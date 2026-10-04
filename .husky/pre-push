@@ -1,4 +1,0 @@
-pnpm lint
-pnpm typecheck
-pnpm bundle
-pnpm test

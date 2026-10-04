@@ -1,15 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock } from "bun:test";
 import type {
   DocumentFormattingParams,
   TextEdit,
 } from "vscode-languageserver/node";
 import type { FormatterOptions } from "@/features/formatter";
+import * as formatter from "@/features/formatter";
 import {
   DEFAULT_FORMATTER_OPTIONS,
   formatBoolean,
   formatColor,
   formatCommaSeparated,
-  formatDocument,
   formatLine,
   formatPaletteValue,
   isHexColor,
@@ -25,10 +25,8 @@ import {
 // Spy on formatDocument, forwarding to the real implementation by default, so
 // the provider's catch branch can be exercised with a one-time thrown error
 // without touching the many formatDocument(...) assertions above.
-vi.mock("../features/formatter", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../features/formatter")>();
-  return { ...actual, formatDocument: vi.fn(actual.formatDocument) };
-});
+const formatDocument = mock(formatter.formatDocument);
+mock.module("@/features/formatter", () => ({ ...formatter, formatDocument }));
 
 // Shorthand: merge overrides onto defaults
 function opts(overrides: Partial<FormatterOptions> = {}): FormatterOptions {
@@ -527,7 +525,7 @@ describe("registerFormatterProvider", () => {
 
   it("logs and surfaces an error, returning null, when formatting throws", async () => {
     const { connection, format } = setupFormatter("font-thicken=TRUE\n");
-    vi.mocked(formatDocument).mockImplementationOnce(() => {
+    formatDocument.mockImplementationOnce(() => {
       throw new Error("boom");
     });
 

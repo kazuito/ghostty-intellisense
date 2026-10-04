@@ -15,13 +15,13 @@ files ending in `.ghostty`.
   config-domain primitives live in `src/core/`, Ghostty CLI integration in
   `src/ghostty/`, generated config keys in `src/generated/`.
 - Builds are bundled with Rolldown into `out/extension.js` and
-  `out/server.js`; there is no standalone `pnpm compile` script.
+  `out/server.js`; there is no standalone `compile` script.
 - The server shells out to the Ghostty CLI (`ghostty.executablePath`) at
   startup and during validation to load defaults, installed fonts, and CLI
   diagnostics.
 - Config **key list and descriptions** are generated from Ghostty's
   upstream docs into `src/generated/config-keys.ts` by
-  `scripts/gen-config.ts` (run `pnpm gen:config`). Committed; the build
+  `scripts/gen-config.ts` (run `bun run gen:config`). Committed; the build
   never touches the network.
 - `src/core/schema.ts` merges the generated list with a hand-curated
   overlay (`configMetadata`) for metadata the docs don't expose
@@ -49,7 +49,7 @@ src/
 └── generated/
     └── config-keys.ts   # Generated config keys + descriptions (do not edit)
 
-src/test/           # Vitest suite (centralized), one file per feature/module
+src/test/           # bun test suite (centralized), one file per feature/module
 ```
 
 Dependency direction is one-way: `generated → core → features → ghostty`,
@@ -96,40 +96,40 @@ written to `out/`; never hand-edit files there.
 settings.
 
 The key alternation and enum-value alternation in the grammar are
-**generated** by `scripts/gen-config.ts` — run `pnpm gen:config` after key
+**generated** by `scripts/gen-config.ts` — run `bun run gen:config` after key
 or enum changes rather than hand-editing those regexes. Other token
-patterns (strings, numbers, colors, paths) are hand-maintained. A Vitest
+patterns (strings, numbers, colors, paths) are hand-maintained. A
 drift check (`src/test/generated.test.ts`) asserts the grammar key set
 matches the generated key set.
 
 ## Build And Verification
 
 ```bash
-pnpm gen:config # Regenerate config keys/descriptions + grammar from upstream MDX
-pnpm bundle     # Rolldown bundle to out/
-pnpm watch      # Rolldown watch build
-pnpm typecheck  # Type-check without emitting
-pnpm lint       # Biome lint
-pnpm format     # Biome format --write
-pnpm check      # Biome check --write --unsafe + typecheck
-pnpm test       # Vitest suite under src/test/
+bun run gen:config # Regenerate config keys/descriptions + grammar from upstream MDX
+bun run bundle     # Rolldown bundle to out/
+bun run watch      # Rolldown watch build
+bun run typecheck  # Type-check without emitting
+bun run lint       # Biome lint
+bun run format     # Biome format --write
+bun run check      # Biome check --write --unsafe + typecheck
+bun run test       # bun test suite under src/test/
 ```
 
-`prepare` runs `husky`; `rolldown.config.ts` controls the client/server
-bundles emitted into `out/`. `examples/` holds sample configs for manual
-verification in VSCode.
+`prepare` runs `lefthook install` (hooks live in `lefthook.yml`);
+`rolldown.config.ts` controls the client/server bundles emitted into `out/`.
+`examples/` holds sample configs for manual verification in VSCode.
 
 ## Working Rules For Future Changes
 
-- To pick up upstream key/description changes, run `pnpm gen:config` and
+- To pick up upstream key/description changes, run `bun run gen:config` and
   commit the regenerated `src/generated/config-keys.ts` and grammar. Don't
   hand-edit the generated file or the grammar's key/enum alternations.
 - For value/validation metadata (enums, color/font assets, comma
   semantics), edit `configMetadata` in `src/core/schema.ts`;
-  `pnpm gen:config` reads it to regenerate the grammar's enum alternation.
+  `bun run gen:config` reads it to regenerate the grammar's enum alternation.
 - If a key is valid multiple times in one file, add it to `additiveKeys`.
 - If schema changes affect completion, diagnostics, formatter, or code
-  actions, update the relevant Vitest coverage in `src/test/`.
+  actions, update the relevant test coverage in `src/test/`.
 - New LSP features get their own `src/features/<feature>/` (provider.ts +
   logic), registered in `src/server.ts`. Shared logic goes in `src/core/`.
 - If you add or rename formatter settings, update `package.json` and

@@ -14,34 +14,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: pnpm
+          bun-version-file: package.json
 
-      - run: pnpm install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
       - name: Lint & Type check
-        run: pnpm lint && pnpm typecheck
+        run: bun run lint && bun run typecheck
 
       - name: Test
-        run: pnpm test
+        run: bun run test
 
       - name: Bundle
-        run: pnpm bundle
+        run: bun run bundle
 
       - name: Package
-        run: pnpm dlx @vscode/vsce package --no-dependencies --out ghostty.vsix
+        run: bunx @vscode/vsce package --no-dependencies --out ghostty.vsix
 
       - name: Publish to VS Code Marketplace
-        run: pnpm dlx @vscode/vsce publish --no-dependencies --packagePath ghostty.vsix
+        run: bunx @vscode/vsce publish --no-dependencies --packagePath ghostty.vsix
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Publish to Open VSX
-        run: pnpm dlx ovsx publish ghostty.vsix
+        run: bunx ovsx publish ghostty.vsix
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
 

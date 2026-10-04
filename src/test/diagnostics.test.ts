@@ -1,14 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, mock, vi } from "bun:test";
+import * as childProcess from "node:child_process";
+import * as fsPromises from "node:fs/promises";
 import {
   type Diagnostic,
   DiagnosticSeverity,
 } from "vscode-languageserver/node";
 
-vi.mock("node:child_process");
-vi.mock("node:fs/promises");
+const execFile = mock<(...args: unknown[]) => unknown>();
+const writeFile = mock<(...args: unknown[]) => Promise<void>>();
+const unlink = mock<(...args: unknown[]) => Promise<void>>();
+mock.module("node:child_process", () => ({ ...childProcess, execFile }));
+mock.module("node:fs/promises", () => ({ ...fsPromises, writeFile, unlink }));
 
-import { execFile } from "node:child_process";
-import { unlink, writeFile } from "node:fs/promises";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   buildUnparsedErrorsDiagnostic,
@@ -21,17 +24,24 @@ import {
   createMockDocuments,
 } from "./helpers";
 
+// ponytail: fixed microtask drain; raise the count if the validation chain grows deeper.
+async function flushTimers(ms?: number) {
+  if (ms === undefined) vi.runAllTimers();
+  else vi.advanceTimersByTime(ms);
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
-  vi.mocked(writeFile).mockResolvedValue(undefined);
-  vi.mocked(unlink).mockResolvedValue(undefined);
+  writeFile.mockResolvedValue(undefined);
+  unlink.mockResolvedValue(undefined);
 });
 
 async function setupDiagnostics(content: string, ghosttyOutput = "") {
   vi.useFakeTimers();
 
-  vi.mocked(execFile).mockImplementation(
+  execFile.mockImplementation(
     (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
       const cb = callback as (
         err: Error | null,
@@ -43,7 +53,7 @@ async function setupDiagnostics(content: string, ghosttyOutput = "") {
       } else {
         cb(null, "", "");
       }
-      return {} as ReturnType<typeof execFile>;
+      return {};
     },
   );
 
@@ -72,7 +82,7 @@ async function setupDiagnostics(content: string, ghosttyOutput = "") {
 
   const getDiagnostics = async (): Promise<Diagnostic[]> => {
     handlers.onDidOpen?.({ document: doc });
-    await vi.runAllTimersAsync();
+    await flushTimers();
     const calls = connection.sendDiagnostics.mock.calls;
     return (calls[calls.length - 1]?.[0]?.diagnostics as Diagnostic[]) ?? [];
   };
@@ -433,7 +443,7 @@ describe("diagnostics provider - document close", () => {
 describe("diagnostics provider - validation lifecycle", () => {
   it("reuses one temp file per document until close", async () => {
     vi.useFakeTimers();
-    vi.mocked(execFile).mockImplementation(
+    execFile.mockImplementation(
       (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
         const cb = callback as (
           err: Error | null,
@@ -441,7 +451,7 @@ describe("diagnostics provider - validation lifecycle", () => {
           stderr: string,
         ) => void;
         cb(null, "", "");
-        return {} as ReturnType<typeof execFile>;
+        return {};
       },
     );
 
@@ -477,28 +487,24 @@ describe("diagnostics provider - validation lifecycle", () => {
     );
 
     handlers.onDidOpen?.({ document: doc1 });
-    await vi.runAllTimersAsync();
+    await flushTimers();
 
     handlers.onDidChangeContent?.({ document: doc2 });
-    await vi.runAllTimersAsync();
+    await flushTimers();
 
     expect(writeFile).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(writeFile).mock.calls[0]?.[0]).toBe(
-      vi.mocked(writeFile).mock.calls[1]?.[0],
-    );
+    expect(writeFile.mock.calls[0]?.[0]).toBe(writeFile.mock.calls[1]?.[0]);
     expect(unlink).not.toHaveBeenCalled();
 
     handlers.onDidClose?.({ document: doc2 });
 
     expect(unlink).toHaveBeenCalledTimes(1);
-    expect(unlink).toHaveBeenCalledWith(
-      vi.mocked(writeFile).mock.calls[0]?.[0],
-    );
+    expect(unlink).toHaveBeenCalledWith(writeFile.mock.calls[0]?.[0]);
   });
 
   it("revalidateOpenDocuments re-runs validation for all open documents", async () => {
     vi.useFakeTimers();
-    vi.mocked(execFile).mockImplementation(
+    execFile.mockImplementation(
       (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
         const cb = callback as (
           err: Error | null,
@@ -506,7 +512,7 @@ describe("diagnostics provider - validation lifecycle", () => {
           stderr: string,
         ) => void;
         cb(null, "", "");
-        return {} as ReturnType<typeof execFile>;
+        return {};
       },
     );
 
@@ -525,7 +531,7 @@ describe("diagnostics provider - validation lifecycle", () => {
     expect(connection.sendDiagnostics).not.toHaveBeenCalled();
 
     revalidateOpenDocuments();
-    await vi.runAllTimersAsync();
+    await flushTimers();
 
     expect(execFile).toHaveBeenCalledTimes(1);
     expect(connection.sendDiagnostics).toHaveBeenCalledWith(
@@ -540,7 +546,7 @@ describe("diagnostics provider - validation lifecycle", () => {
       (err: Error | null, stdout: string, stderr: string) => void
     > = [];
 
-    vi.mocked(execFile).mockImplementation(
+    execFile.mockImplementation(
       (_cmd: unknown, _args: unknown, opts: unknown, callback: unknown) => {
         const options = opts as { signal?: AbortSignal };
         if (options.signal) {
@@ -553,7 +559,7 @@ describe("diagnostics provider - validation lifecycle", () => {
             stderr: string,
           ) => void,
         );
-        return {} as ReturnType<typeof execFile>;
+        return {};
       },
     );
 
@@ -589,7 +595,7 @@ describe("diagnostics provider - validation lifecycle", () => {
     );
 
     handlers.onDidOpen?.({ document: doc1 });
-    await vi.advanceTimersByTimeAsync(300);
+    await flushTimers(300);
 
     expect(signals).toHaveLength(1);
     expect(signals[0]?.aborted).toBe(false);
@@ -603,7 +609,7 @@ describe("diagnostics provider - validation lifecycle", () => {
       "",
       "",
     );
-    await vi.advanceTimersByTimeAsync(300);
+    await flushTimers(300);
 
     expect(signals).toHaveLength(2);
 
@@ -617,7 +623,7 @@ describe("diagnostics provider - validation lifecycle", () => {
       (err: Error | null, stdout: string, stderr: string) => void
     > = [];
 
-    vi.mocked(execFile).mockImplementation(
+    execFile.mockImplementation(
       (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
         callbacks.push(
           callback as (
@@ -626,7 +632,7 @@ describe("diagnostics provider - validation lifecycle", () => {
             stderr: string,
           ) => void,
         );
-        return {} as ReturnType<typeof execFile>;
+        return {};
       },
     );
 
@@ -662,7 +668,7 @@ describe("diagnostics provider - validation lifecycle", () => {
     );
 
     handlers.onDidOpen?.({ document: doc1 });
-    await vi.advanceTimersByTimeAsync(300);
+    await flushTimers(300);
 
     callbacks[0]?.(null, '/tmp/mock:1:font-size: invalid value "bad"', "");
     await Promise.resolve();

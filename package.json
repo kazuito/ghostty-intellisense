@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/kazuito/ghostty-intellisense/issues"
   },
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "bun@1.4.2",
   "engines": {
     "vscode": "^1.91.0"
   },
@@ -39,17 +39,17 @@
   "icon": "assets/icon.png",
   "main": "./out/extension.js",
   "scripts": {
-    "vscode:prepublish": "pnpm bundle",
+    "vscode:prepublish": "bun run bundle",
     "bundle": "NODE_ENV=production rolldown --config rolldown.config.ts",
     "bundle:dev": "rolldown --config rolldown.config.ts",
     "watch": "rolldown --config rolldown.config.ts --watch",
-    "gen:config": "tsx --tsconfig tsconfig.app.json scripts/gen-config.ts && biome format --write src/generated/config-keys.ts syntaxes/ghostty-config.tmLanguage.json",
+    "gen:config": "bun scripts/gen-config.ts && biome format --write src/generated/config-keys.ts syntaxes/ghostty-config.tmLanguage.json",
     "lint": "biome lint",
     "format": "biome format --write",
-    "check": "pnpm biome check --write --unsafe && pnpm typecheck",
-    "test": "vitest run",
+    "check": "biome check --write --unsafe && bun run typecheck",
+    "test": "bun test src/test",
     "typecheck": "tsc -b",
-    "prepare": "husky"
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "vscode-languageclient": "^10.1.2",
@@ -58,13 +58,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
+    "@types/bun": "^1.4.2",
     "@types/node": "~26.1.2",
     "@types/vscode": "^1.91.0",
-    "husky": "^9.1.7",
+    "lefthook": "^2.1.16",
     "rolldown": "^1.2.11",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.2"
+    "typescript": "^7.0.2"
   },
   "contributes": {
     "languages": [

@@ -4,10 +4,10 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "pnpm: watch",
+      "label": "bun: watch",
       "type": "shell",
-      "command": "pnpm",
-      "args": ["watch"],
+      "command": "bun",
+      "args": ["run", "watch"],
       "isBackground": true,
       "problemMatcher": {
         "owner": "rolldown",

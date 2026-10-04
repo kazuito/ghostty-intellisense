@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { additiveKeys, commaKeys, optionByKey, validKeys } from "@/core/schema";
 
 describe("schema indexes", () => {

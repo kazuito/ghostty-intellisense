@@ -1,5 +1,8 @@
-import { type Mock, vi } from "vitest";
+import { type Mock, vi } from "bun:test";
 import { TextDocument } from "vscode-languageserver-textdocument";
+
+// biome-ignore lint/suspicious/noExplicitAny: LSP handler mocks are invoked with arbitrary params
+type AnyMock = Mock<(...args: any[]) => any>;
 
 export function createDocument(content: string): TextDocument {
   return TextDocument.create(
@@ -11,15 +14,15 @@ export function createDocument(content: string): TextDocument {
 }
 
 export function createMockConnection(): {
-  onHover: Mock;
-  onCompletion: Mock;
-  onCodeAction: Mock;
-  onDocumentSymbol: Mock;
-  onDocumentFormatting: Mock;
-  sendDiagnostics: Mock;
-  workspace: { getConfiguration: Mock };
-  console: { error: Mock; warn: Mock };
-  window: { showErrorMessage: Mock };
+  onHover: AnyMock;
+  onCompletion: AnyMock;
+  onCodeAction: AnyMock;
+  onDocumentSymbol: AnyMock;
+  onDocumentFormatting: AnyMock;
+  sendDiagnostics: AnyMock;
+  workspace: { getConfiguration: AnyMock };
+  console: { error: AnyMock; warn: AnyMock };
+  window: { showErrorMessage: AnyMock };
 } {
   return {
     onHover: vi.fn(),
@@ -43,9 +46,9 @@ export function createMockConnection(): {
 
 export function createMockDocuments(doc: TextDocument): {
   get: Mock<(uri: string) => TextDocument | undefined>;
-  onDidOpen: Mock;
-  onDidChangeContent: Mock;
-  onDidClose: Mock;
+  onDidOpen: AnyMock;
+  onDidChangeContent: AnyMock;
+  onDidClose: AnyMock;
 } {
   return {
     get: vi.fn((_uri: string): TextDocument | undefined => doc),

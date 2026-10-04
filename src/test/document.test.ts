@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { parseDocument, parseDocumentLine, parseLine } from "@/core/document";
 
 describe("document parser", () => {
