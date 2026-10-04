@@ -1,5 +1,5 @@
 import { GHOSTTY_CLI_FLAGS } from "./constants";
-import { type GhosttyRunner, runGhosttyAsync } from "./ghostty";
+import { runGhosttyAsync } from "./ghostty";
 
 export const ghosttyDefaults: Map<string, string> = new Map();
 
@@ -20,13 +20,6 @@ export function parseDefaultsOutput(output: string): Map<string, string> {
   return defaults;
 }
 
-function applyDefaults(output: string): void {
-  ghosttyDefaults.clear();
-  for (const [key, value] of parseDefaultsOutput(output)) {
-    ghosttyDefaults.set(key, value);
-  }
-}
-
 const SHOW_DEFAULT_CONFIG_ARGS = [
   GHOSTTY_CLI_FLAGS.SHOW_CONFIG,
   GHOSTTY_CLI_FLAGS.DEFAULT,
@@ -34,7 +27,13 @@ const SHOW_DEFAULT_CONFIG_ARGS = [
 
 export async function loadGhosttyDefaultsAsync(
   executablePath?: string,
-  run: GhosttyRunner = runGhosttyAsync,
 ): Promise<void> {
-  applyDefaults(await run(SHOW_DEFAULT_CONFIG_ARGS, executablePath));
+  const output = await runGhosttyAsync(
+    SHOW_DEFAULT_CONFIG_ARGS,
+    executablePath,
+  );
+  ghosttyDefaults.clear();
+  for (const [key, value] of parseDefaultsOutput(output)) {
+    ghosttyDefaults.set(key, value);
+  }
 }

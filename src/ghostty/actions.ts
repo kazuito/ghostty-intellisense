@@ -1,5 +1,5 @@
 import { GHOSTTY_CLI_FLAGS } from "./constants";
-import { type GhosttyRunner, runGhosttyAsync } from "./ghostty";
+import { runGhosttyAsync } from "./ghostty";
 
 export interface GhosttyAction {
   name: string;
@@ -49,11 +49,6 @@ export function parseActionsOutput(output: string): GhosttyAction[] {
   return actions;
 }
 
-function applyActions(output: string): void {
-  ghosttyActions.length = 0;
-  ghosttyActions.push(...parseActionsOutput(output));
-}
-
 const LIST_ACTIONS_ARGS = [
   GHOSTTY_CLI_FLAGS.LIST_ACTIONS,
   GHOSTTY_CLI_FLAGS.DOCS,
@@ -61,7 +56,8 @@ const LIST_ACTIONS_ARGS = [
 
 export async function loadGhosttyActionsAsync(
   executablePath?: string,
-  run: GhosttyRunner = runGhosttyAsync,
 ): Promise<void> {
-  applyActions(await run(LIST_ACTIONS_ARGS, executablePath));
+  const output = await runGhosttyAsync(LIST_ACTIONS_ARGS, executablePath);
+  ghosttyActions.length = 0;
+  ghosttyActions.push(...parseActionsOutput(output));
 }

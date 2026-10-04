@@ -3,20 +3,6 @@ import { ghosttyDefaults, loadGhosttyDefaultsAsync } from "./defaults";
 import { ghosttyFonts, loadGhosttyFontsAsync } from "./fonts";
 import { isGhosttyAvailableAsync } from "./ghostty";
 
-export interface ReloadDeps {
-  isAvailable: (executablePath?: string) => Promise<boolean>;
-  loadDefaults: (executablePath?: string) => Promise<void>;
-  loadFonts: (executablePath?: string) => Promise<void>;
-  loadActions: (executablePath?: string) => Promise<void>;
-}
-
-const defaultDeps: ReloadDeps = {
-  isAvailable: (executablePath) => isGhosttyAvailableAsync(executablePath),
-  loadDefaults: loadGhosttyDefaultsAsync,
-  loadFonts: loadGhosttyFontsAsync,
-  loadActions: loadGhosttyActionsAsync,
-};
-
 export function clearGhosttyData(): void {
   ghosttyDefaults.clear();
   ghosttyFonts.length = 0;
@@ -30,17 +16,16 @@ export function clearGhosttyData(): void {
  */
 export async function reloadGhosttyData(
   executablePath?: string,
-  deps: ReloadDeps = defaultDeps,
 ): Promise<boolean> {
-  if (!(await deps.isAvailable(executablePath))) {
+  if (!(await isGhosttyAvailableAsync(executablePath))) {
     clearGhosttyData();
     return false;
   }
 
   await Promise.all([
-    deps.loadDefaults(executablePath),
-    deps.loadFonts(executablePath),
-    deps.loadActions(executablePath),
+    loadGhosttyDefaultsAsync(executablePath),
+    loadGhosttyFontsAsync(executablePath),
+    loadGhosttyActionsAsync(executablePath),
   ]);
   return true;
 }
