@@ -4,6 +4,23 @@ All notable changes to the "ghostty" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.0.8] - 2026-10-05
+
+### Fixed
+
+- Syntax highlighting: an unclosed `"` no longer turns the rest of the file
+  into a string; values may contain `#` (Ghostty has no inline comments);
+  multi-word and path values after a nested `=` (e.g.
+  `font-codepoint-map = U+E000-U+F8FF=Symbols Nerd Font`,
+  `env = PATH=/usr/bin`) are highlighted correctly, and codepoint ranges get
+  their own scope
+- Formatting a line ending in `\r\r\n` now folds the stray carriage return
+  into the line ending, so formatting is idempotent
+- Diagnostics whose reported field doesn't appear on the referenced line now
+  highlight that whole line instead of an out-of-bounds range
+- `link` no longer offers `true`/`false` completions, which Ghostty always
+  rejects since the option is not implemented yet
+
 ## [1.0.7] - 2026-07-14
 
 ### Changed
