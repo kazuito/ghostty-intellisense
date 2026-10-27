@@ -16,6 +16,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["test/unit/**/*", "test/integration/**/*"],
+  "include": [
+    "test/unit/**/*",
+    "test/integration/**/*",
+    "test/ghostty.ts",
+    "test/ghostty-pin.json"
+  ],
   "references": [{ "path": "./tsconfig.app.json" }]
 }

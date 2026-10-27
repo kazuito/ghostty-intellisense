@@ -1,22 +1,18 @@
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import path from "node:path";
 import * as vscode from "vscode";
 import { type GhosttyAction, parseActionsOutput } from "@/ghostty/actions";
 import { GHOSTTY_CLI_FLAGS } from "@/ghostty/constants";
+import {
+  GHOSTTY_PIN,
+  ghosttyVersionOf,
+  pinMismatchMessage,
+  pinnedGhosttyBin,
+} from "../ghostty";
 
 export const LANGUAGE_ID = "ghostty-config";
 
-/** Bump together with `GHOSTTY_DEB_URL` in .github/workflows/ci.yml. */
-export const GHOSTTY_VERSION = "1.3.1";
-
-const MACOS_APP_BIN = "/Applications/Ghostty.app/Contents/MacOS/ghostty";
-
-/** `GHOSTTY_BIN` points the suite at a specific build, e.g. a pinned copy. */
-export const GHOSTTY_BIN =
-  process.env.GHOSTTY_BIN ||
-  (process.platform === "darwin" && existsSync(MACOS_APP_BIN)
-    ? MACOS_APP_BIN
-    : "ghostty");
+export const GHOSTTY_BIN = pinnedGhosttyBin(path.resolve(__dirname, "../.."));
 
 function ghostty(...args: string[]): string {
   return execFileSync(GHOSTTY_BIN, args, {
@@ -97,23 +93,27 @@ export async function hoverText(
 
 /**
  * Points the extension at the pinned Ghostty release and waits until the
- * language server serves its data, so no test runs against another version.
+ * language server has reloaded from it. Going through a missing executable
+ * first proves the data came from this binary, not one loaded at startup.
  */
 export async function useGhostty(): Promise<void> {
-  const [version] = ghostty("--version").split("\n");
-  if (version !== `Ghostty ${GHOSTTY_VERSION}`) {
-    throw new Error(
-      `${GHOSTTY_BIN} reports "${version}", expected Ghostty ${GHOSTTY_VERSION}; install it or set GHOSTTY_BIN`,
-    );
+  const version = ghosttyVersionOf(GHOSTTY_BIN);
+  if (version !== GHOSTTY_PIN.version) {
+    throw new Error(pinMismatchMessage(GHOSTTY_BIN, version));
   }
   await resetSettings();
-  await setSetting("executablePath", GHOSTTY_BIN);
   const doc = await openDoc("font-size = 14");
+  const hover = () => hoverText(doc, new vscode.Position(0, 2));
+  const hasDefault = (text: string) => text.includes("**Default:**");
+
+  await setSetting("executablePath", "/nonexistent/ghostty");
   await waitFor(
-    () => hoverText(doc, new vscode.Position(0, 2)),
-    (text) => text.includes("**Default:**"),
+    hover,
+    (text) => text.includes("**font-size**") && !hasDefault(text),
     20_000,
   );
+  await setSetting("executablePath", GHOSTTY_BIN);
+  await waitFor(hover, hasDefault, 20_000);
   await closeAll();
 }
 

@@ -54,7 +54,9 @@ test/
 │                   # fast-check properties in properties.test.ts
 ├── integration/    # bun tests against the real Ghostty CLI (skipped locally if absent)
 ├── e2e/            # VS Code E2E (mocha tdd) against the pinned real Ghostty CLI
-└── grammar/        # vscode-tmgrammar-test scope assertions
+├── grammar/        # vscode-tmgrammar-test scope assertions
+├── ghostty-pin.json  # Pinned Ghostty version + download URLs/sha256
+└── ghostty.ts      # Resolves and version-checks the pinned binary
 ```
 
 Dependency direction is one-way: `generated → core → features → ghostty`,
@@ -120,9 +122,10 @@ bun run typecheck  # Type-check without emitting
 bun run lint       # Biome lint
 bun run format     # Biome format --write
 bun run check      # Biome check --write --unsafe + typecheck
-bun run test       # unit, then CLI integration, then test:grammar
+bun run test       # unit, setup:ghostty, CLI integration, then test:grammar
 bun run test:grammar # Grammar scope assertions in test/grammar/*.test.ghostty
-bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
+bun run test:e2e   # setup:ghostty, dev bundle, then VS Code E2E via @vscode/test-cli
+bun run setup:ghostty # Install the pinned Ghostty (macOS); no-op when current
 ```
 
 `prepare` runs `lefthook install` (hooks live in `lefthook.yml`);
@@ -130,6 +133,20 @@ bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
 `examples/` holds sample configs for manual verification in VSCode.
 
 ### Test layers
+
+- **Pinned Ghostty**: every CLI-backed test runs against the release in
+  `test/ghostty-pin.json` and fails (never skips) if the binary reports
+  another version. The binary is `GHOSTTY_BIN` if set; otherwise on macOS
+  it is `.vscode-test/ghostty/<version>/Ghostty.app`, which
+  `scripts/setup-ghostty.ts` downloads (one-time ~34 MB), sha256-checks,
+  and installs atomically, pruning other versions; on Linux it is
+  `ghostty` on PATH, which `ci.yml` installs from the pinned `.deb` (a
+  local Linux setup needs that `.deb` installed or `GHOSTTY_BIN`).
+  `/Applications/Ghostty.app` is never used, so its auto-updates can't
+  change test results. Upstream publishes no DMG checksum; its `sha256`
+  was computed at pin time. To bump: update all fields in the pin file
+  (the `.deb` digest is on its GitHub release), then revisit
+  `newerThanInstalled`.
 
 - **Unit + property** (`test/unit/`): `properties.test.ts` uses fast-check
   for invariants (formatter idempotency, ranges in-bounds, no throws).
@@ -140,24 +157,21 @@ bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
   `mock.module` is process-global and the unit tests mock
   `node:child_process`; `bunfig.toml` sets the bare `bun test` root to
   `test/unit`, so run these via `bun test ./test/integration` (the `./`
-  bypasses that root). Skipped when Ghostty is absent, except under `CI`,
-  where they fail instead; `ci.yml` installs a pinned Ghostty `.deb` on
-  `ubuntu-24.04`, and `publish.yml` gates releases on that workflow.
+  bypasses that root). Skipped when the pinned Ghostty is absent, except
+  under `CI`, where they fail instead; `publish.yml` gates releases on
+  `ci.yml`.
   Overlay values the installed Ghostty rejects go in its
   `newerThanInstalled` skip list only when they are confirmed upstream.
 - **E2E** (`test/e2e/`, config in `.vscode-test.mjs`): launches VS Code and
   drives the extension through `vscode.execute*Provider` commands against
-  the real Ghostty CLI; there is no fake. Each suite calls `useGhostty()`,
-  which fails unless the binary reports `GHOSTTY_VERSION` (pinned in
-  `test/e2e/helpers.ts`, bumped together with `GHOSTTY_DEB_URL` in
-  `ci.yml`), then points `ghostty.executablePath` at it. The binary is
-  `GHOSTTY_BIN` if set, else `/Applications/Ghostty.app` on macOS, else
-  `ghostty` on PATH. Version-dependent output (messages, action docs) may
+  the pinned Ghostty CLI; there is no fake. Each suite calls
+  `useGhostty()`, which checks the version, then switches
+  `ghostty.executablePath` to a missing path and back to the pinned binary
+  so the server's data provably comes from it. Version-dependent output (messages, action docs) may
   be hardcoded; don't assert machine-dependent data (installed fonts,
   platform-specific defaults like `font-size`). Runs against both
   VS Code `stable` and the `engines.vscode` minimum (`1.91.0`); CI runs it
-  under `xvfb-run`. `@vscode/test-electron`
-  always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
+  under `xvfb-run`. `@vscode/test-electron` always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
   the `restrictedConfigurations` declaration and `ghostty.format.*` /
   `DEFAULT_FORMATTER_OPTIONS` parity instead.
 

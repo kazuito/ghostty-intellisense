@@ -10,11 +10,12 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "types": ["node", "mocha"],
+    "resolveJsonModule": true,
     "noEmit": true,
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["test/e2e/**/*"],
+  "include": ["test/e2e/**/*", "test/ghostty.ts", "test/ghostty-pin.json"],
   "references": [{ "path": "./tsconfig.app.json" }]
 }

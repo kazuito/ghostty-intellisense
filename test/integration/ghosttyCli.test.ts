@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { unlink } from "node:fs/promises";
+import path from "node:path";
 import { configMetadata } from "@/core/schema";
 import {
   createValidationTempPath,
@@ -10,11 +11,22 @@ import { parseActionsOutput } from "@/ghostty/actions";
 import { GHOSTTY_CLI_FLAGS } from "@/ghostty/constants";
 import { parseDefaultsOutput } from "@/ghostty/defaults";
 import { parseFontsOutput } from "@/ghostty/fonts";
-import { isGhosttyAvailableAsync, runGhosttyAsync } from "@/ghostty/ghostty";
+import { runGhosttyAsync } from "@/ghostty/ghostty";
+import {
+  GHOSTTY_PIN,
+  ghosttyVersionOf,
+  pinMismatchMessage,
+  pinnedGhosttyBin,
+} from "../ghostty";
 
-const available = await isGhosttyAvailableAsync();
+const ghostty = pinnedGhosttyBin(path.resolve(import.meta.dirname, "../.."));
+const version = ghosttyVersionOf(ghostty);
+const available = version !== undefined;
 if (!available && process.env.CI) {
   throw new Error("ghostty CLI not found; CI must install it for these tests");
+}
+if (available && version !== GHOSTTY_PIN.version) {
+  throw new Error(pinMismatchMessage(ghostty, version));
 }
 
 const tmpPath = createValidationTempPath();
@@ -22,7 +34,7 @@ const tmpPath = createValidationTempPath();
 async function validate(text: string) {
   const { output, reportedErrors } = await runGhosttyValidation(
     text,
-    "",
+    ghostty,
     tmpPath,
   );
   return {
@@ -65,12 +77,15 @@ describe.skipIf(!available)("real ghostty CLI", () => {
 
   it("produces output the data loaders can parse", async () => {
     const [defaults, fonts, actions] = await Promise.all([
-      runGhosttyAsync([
-        GHOSTTY_CLI_FLAGS.SHOW_CONFIG,
-        GHOSTTY_CLI_FLAGS.DEFAULT,
-      ]),
-      runGhosttyAsync([GHOSTTY_CLI_FLAGS.LIST_FONTS]),
-      runGhosttyAsync([GHOSTTY_CLI_FLAGS.LIST_ACTIONS, GHOSTTY_CLI_FLAGS.DOCS]),
+      runGhosttyAsync(
+        [GHOSTTY_CLI_FLAGS.SHOW_CONFIG, GHOSTTY_CLI_FLAGS.DEFAULT],
+        ghostty,
+      ),
+      runGhosttyAsync([GHOSTTY_CLI_FLAGS.LIST_FONTS], ghostty),
+      runGhosttyAsync(
+        [GHOSTTY_CLI_FLAGS.LIST_ACTIONS, GHOSTTY_CLI_FLAGS.DOCS],
+        ghostty,
+      ),
     ]);
     expect(parseDefaultsOutput(defaults).has("font-size")).toBe(true);
     expect(parseFontsOutput(fonts).length).toBeGreaterThan(0);
@@ -79,8 +94,7 @@ describe.skipIf(!available)("real ghostty CLI", () => {
 
   // Overlay values the installed Ghostty rejects, pending confirmation that
   // they exist upstream (keep) or are stale (remove from configMetadata).
-  // CI pins its Ghostty version in .github/workflows/ci.yml (and E2E in
-  // test/e2e/helpers.ts); revisit this list when bumping it.
+  // Revisit this list when bumping test/ghostty-pin.json.
   const newerThanInstalled = new Set([
     "macos-window-buttons = macos-native",
     ...["floating", "hidden", "dock"].flatMap((v) => [

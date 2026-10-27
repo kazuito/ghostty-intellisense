@@ -10,8 +10,14 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "types": ["node"],
+    "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["rolldown.config.ts", "scripts/**/*"],
+  "include": [
+    "rolldown.config.ts",
+    "scripts/**/*",
+    "test/ghostty.ts",
+    "test/ghostty-pin.json"
+  ],
   "references": [{ "path": "./tsconfig.app.json" }]
 }
