@@ -54,21 +54,21 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "vscode-languageclient": "^10.1.2",
-    "vscode-languageserver": "^10.1.2",
-    "vscode-languageserver-textdocument": "^1.0.15"
+    "vscode-languageclient": "^11.0.0",
+    "vscode-languageserver": "^11.0.0",
+    "vscode-languageserver-textdocument": "^1.0.16"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.14",
-    "@types/bun": "^1.4.2",
+    "@biomejs/biome": "^2.6.3",
+    "@types/bun": "^1.4.4",
     "@types/mocha": "^10.0.10",
-    "@types/node": "~26.1.2",
+    "@types/node": "~26.6.5",
     "@types/vscode": "^1.91.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "fast-check": "^4.10.2",
-    "lefthook": "^2.1.16",
-    "rolldown": "^1.2.11",
+    "lefthook": "^2.2.2",
+    "rolldown": "^1.2.15",
     "typescript": "^7.0.2",
     "vscode-tmgrammar-test": "^0.1.3"
   },
