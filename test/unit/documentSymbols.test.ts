@@ -103,6 +103,13 @@ describe("document symbols", () => {
     expect(getSymbols()[1]?.name).toBe("font-thicken");
   });
 
+  it("keeps the CR of CRLF line endings out of symbol ranges", () => {
+    const { getSymbols } = setupSymbols(
+      "font-size = 14\r\nfont-thicken = true\r\n",
+    );
+    expect(getSymbols().map((s) => s.range.end.character)).toEqual([14, 19]);
+  });
+
   it("returns null-safe result when document is missing", () => {
     const connection = createMockConnection();
     let handler: ((params: unknown) => DocumentSymbol[]) | undefined;

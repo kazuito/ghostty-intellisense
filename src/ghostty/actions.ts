@@ -54,10 +54,10 @@ const LIST_ACTIONS_ARGS = [
   GHOSTTY_CLI_FLAGS.DOCS,
 ];
 
-export async function loadGhosttyActionsAsync(
+export async function fetchGhosttyActionsAsync(
   executablePath?: string,
-): Promise<void> {
-  const output = await runGhosttyAsync(LIST_ACTIONS_ARGS, executablePath);
-  ghosttyActions.length = 0;
-  ghosttyActions.push(...parseActionsOutput(output));
+): Promise<GhosttyAction[]> {
+  return parseActionsOutput(
+    await runGhosttyAsync(LIST_ACTIONS_ARGS, executablePath),
+  );
 }

@@ -85,6 +85,11 @@ export function parseDocumentLine(
   };
 }
 
+/** Splits on LF or CRLF so `\r` never ends up inside a line's range. */
+export function splitLines(text: string): string[] {
+  return text.split(/\r?\n/);
+}
+
 export function parseDocument(text: string): ParsedDocumentLine[] {
-  return text.split("\n").map((raw, line) => parseDocumentLine(raw, line));
+  return splitLines(text).map((raw, line) => parseDocumentLine(raw, line));
 }

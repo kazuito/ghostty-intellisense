@@ -49,11 +49,11 @@ export async function resetSettings(prefix = ""): Promise<void> {
   }
 }
 
-export async function openDoc(content: string): Promise<vscode.TextDocument> {
-  const doc = await vscode.workspace.openTextDocument({
-    language: LANGUAGE_ID,
-    content,
-  });
+export async function openDoc(
+  content: string,
+  language = LANGUAGE_ID,
+): Promise<vscode.TextDocument> {
+  const doc = await vscode.workspace.openTextDocument({ language, content });
   await vscode.window.showTextDocument(doc);
   return doc;
 }
@@ -98,6 +98,21 @@ export async function closeAll(): Promise<void> {
   }
 }
 
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function replaceText(
+  doc: vscode.TextDocument,
+  text: string,
+): Promise<void> {
+  const edit = new vscode.WorkspaceEdit();
+  edit.replace(doc.uri, new vscode.Range(0, 0, doc.lineCount, 0), text);
+  if (!(await vscode.workspace.applyEdit(edit))) {
+    throw new Error("applyEdit failed");
+  }
+}
+
 export function diagnosticsOf(doc: vscode.TextDocument): vscode.Diagnostic[] {
   return vscode.languages.getDiagnostics(doc.uri);
 }
@@ -106,3 +121,32 @@ export function codeOf(diagnostic: vscode.Diagnostic): string | undefined {
   const { code } = diagnostic;
   return typeof code === "object" ? String(code.value) : code?.toString();
 }
+
+export function summarize(diagnostics: vscode.Diagnostic[]) {
+  return diagnostics
+    .map((d) => ({
+      code: codeOf(d),
+      line: d.range.start.line,
+      start: d.range.start.character,
+      end: d.range.end.character,
+    }))
+    .sort((a, b) => a.line - b.line || a.start - b.start);
+}
+
+/** Resolves once the document's diagnostic codes are exactly `codes`. */
+export async function waitForCodes(
+  doc: vscode.TextDocument,
+  codes: string[],
+): Promise<vscode.Diagnostic[]> {
+  const sorted = JSON.stringify([...codes].sort());
+  return waitFor(
+    () => diagnosticsOf(doc),
+    (diags) => JSON.stringify(diags.map(codeOf).sort()) === sorted,
+  );
+}
+
+/**
+ * A line the fake CLI always rejects. Waiting for its diagnostic proves a
+ * full CLI round trip finished, so absence assertions can't pass early.
+ */
+export const SENTINEL = "bogus-key = 1";

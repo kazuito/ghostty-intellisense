@@ -1,6 +1,6 @@
-import { ghosttyActions, loadGhosttyActionsAsync } from "./actions";
-import { ghosttyDefaults, loadGhosttyDefaultsAsync } from "./defaults";
-import { ghosttyFonts, loadGhosttyFontsAsync } from "./fonts";
+import { fetchGhosttyActionsAsync, ghosttyActions } from "./actions";
+import { fetchGhosttyDefaultsAsync, ghosttyDefaults } from "./defaults";
+import { fetchGhosttyFontsAsync, ghosttyFonts } from "./fonts";
 import { isGhosttyAvailableAsync } from "./ghostty";
 
 export function clearGhosttyData(): void {
@@ -9,23 +9,37 @@ export function clearGhosttyData(): void {
   ghosttyActions.length = 0;
 }
 
+let latestReload = 0;
+
 /**
  * Refresh CLI-derived data without blocking. Resolves true when the Ghostty CLI
  * was reachable and data loaded; false when it was unavailable, in which case
  * any cached data is cleared so consumers don't serve stale defaults.
+ *
+ * Only the most recently started reload writes the shared data, so a slow CLI
+ * from a superseded `executablePath` can't overwrite a newer one's results.
  */
 export async function reloadGhosttyData(
   executablePath?: string,
 ): Promise<boolean> {
+  const reload = ++latestReload;
+  const isLatest = () => reload === latestReload;
+
   if (!(await isGhosttyAvailableAsync(executablePath))) {
-    clearGhosttyData();
+    if (isLatest()) clearGhosttyData();
     return false;
   }
 
-  await Promise.all([
-    loadGhosttyDefaultsAsync(executablePath),
-    loadGhosttyFontsAsync(executablePath),
-    loadGhosttyActionsAsync(executablePath),
+  const [defaults, fonts, actions] = await Promise.all([
+    fetchGhosttyDefaultsAsync(executablePath),
+    fetchGhosttyFontsAsync(executablePath),
+    fetchGhosttyActionsAsync(executablePath),
   ]);
+  if (isLatest()) {
+    clearGhosttyData();
+    for (const [key, value] of defaults) ghosttyDefaults.set(key, value);
+    ghosttyFonts.push(...fonts);
+    ghosttyActions.push(...actions);
+  }
   return true;
 }

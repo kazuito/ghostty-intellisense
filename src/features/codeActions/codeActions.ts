@@ -1,4 +1,4 @@
-import { parseDocumentLine, type Range } from "@/core/document";
+import { parseDocumentLine, type Range, splitLines } from "@/core/document";
 import { ghosttyConfigOptions, optionByKey } from "@/core/schema";
 
 export type DiagnosticSeverity = "warning" | "information" | "error";
@@ -63,7 +63,7 @@ export function getCodeActionSuggestions(
   text: string,
   diagnostics: DiagnosticLike[],
 ): CodeActionSuggestion[] {
-  const lines = text.split("\n");
+  const lines = splitLines(text);
   const suggestions: CodeActionSuggestion[] = [];
 
   for (const diagnostic of diagnostics) {

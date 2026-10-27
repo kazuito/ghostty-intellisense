@@ -7,6 +7,7 @@ import {
 } from "vscode-languageserver/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import { GHOSTTY_CONFIG_SECTION } from "@/core/constants";
+import { splitLines } from "@/core/document";
 import {
   buildUnparsedErrorsDiagnostic,
   createValidationTempPath,
@@ -74,8 +75,8 @@ async function validateDocumentAsync(
     if (state.controller !== controller) return;
 
     state.controller = null;
-    const lines = text.split("\n");
-    const parsed = parseGhosttyOutput(output, lines);
+    const lines = splitLines(text);
+    const parsed = parseGhosttyOutput(output, lines, state.tmpPath);
 
     if (reportedErrors && parsed.length === 0) {
       connection.console.warn(

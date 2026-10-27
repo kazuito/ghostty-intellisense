@@ -25,15 +25,10 @@ const SHOW_DEFAULT_CONFIG_ARGS = [
   GHOSTTY_CLI_FLAGS.DEFAULT,
 ];
 
-export async function loadGhosttyDefaultsAsync(
+export async function fetchGhosttyDefaultsAsync(
   executablePath?: string,
-): Promise<void> {
-  const output = await runGhosttyAsync(
-    SHOW_DEFAULT_CONFIG_ARGS,
-    executablePath,
+): Promise<Map<string, string>> {
+  return parseDefaultsOutput(
+    await runGhosttyAsync(SHOW_DEFAULT_CONFIG_ARGS, executablePath),
   );
-  ghosttyDefaults.clear();
-  for (const [key, value] of parseDefaultsOutput(output)) {
-    ghosttyDefaults.set(key, value);
-  }
 }

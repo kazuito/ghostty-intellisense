@@ -74,7 +74,8 @@ written to `out/`; never hand-edit files there.
   non-additive keys; unknown keys and invalid values come from
   `ghostty +validate-config`, run async. That CLI emits two output formats
   (`file:line:field: msg` vs. unlocated `field: msg` once a theme/secondary
-  config loads); `parseGhosttyOutput` handles both. A fallback diagnostic
+  config loads); `parseGhosttyOutput` handles both, skipping located lines
+  from other files (e.g. `config-file` includes) by basename. A fallback diagnostic
   surfaces raw output if nothing could be parsed, so CLI format drift can't
   fail silently.
 - **Formatter** — pure helpers (`parseLine`, `formatValue`,

@@ -1,7 +1,8 @@
+import { basename } from "node:path";
 import { parseDocumentLine, parseLine, rangeOf } from "@/core/document";
 import { UNKNOWN_FIELD_MESSAGE, type ValidationDiagnostic } from "./types";
 
-const LOCATED_OUTPUT_RE = /^.+?:(\d+):([^:]+):\s*(.+)$/;
+const LOCATED_OUTPUT_RE = /^(.+?):(\d+):([^:]+):\s*(.+)$/;
 const UNLOCATED_OUTPUT_RE = /^([A-Za-z0-9_-]+):\s*(.+)$/;
 
 function findKeyLine(lines: string[], key: string): number {
@@ -37,20 +38,28 @@ function buildDiagnostic(
   };
 }
 
+/**
+ * Maps `+validate-config` output onto `lines`. When `sourcePath` is given,
+ * located errors from other files (e.g. a `config-file` include) are skipped
+ * instead of landing on unrelated lines; paths are compared by basename
+ * because Ghostty may print a resolved path (`/private/var/...` on macOS).
+ */
 export function parseGhosttyOutput(
   output: string,
   lines: string[],
+  sourcePath?: string,
 ): ValidationDiagnostic[] {
   const diagnostics: ValidationDiagnostic[] = [];
 
   for (const rawLine of output.split("\n")) {
     const located = rawLine.match(LOCATED_OUTPUT_RE);
     if (located) {
+      if (sourcePath && basename(located[1]) !== basename(sourcePath)) continue;
       const diagnostic = buildDiagnostic(
         lines,
-        parseInt(located[1], 10) - 1,
-        (located[2] ?? "").trim(),
-        located[3].trim(),
+        parseInt(located[2], 10) - 1,
+        (located[3] ?? "").trim(),
+        located[4].trim(),
       );
       if (diagnostic) diagnostics.push(diagnostic);
       continue;

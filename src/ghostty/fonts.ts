@@ -13,13 +13,10 @@ export function parseFontsOutput(output: string): string[] {
   return fonts;
 }
 
-export async function loadGhosttyFontsAsync(
+export async function fetchGhosttyFontsAsync(
   executablePath?: string,
-): Promise<void> {
-  const output = await runGhosttyAsync(
-    [GHOSTTY_CLI_FLAGS.LIST_FONTS],
-    executablePath,
+): Promise<string[]> {
+  return parseFontsOutput(
+    await runGhosttyAsync([GHOSTTY_CLI_FLAGS.LIST_FONTS], executablePath),
   );
-  ghosttyFonts.length = 0;
-  ghosttyFonts.push(...parseFontsOutput(output));
 }

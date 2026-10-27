@@ -38,18 +38,33 @@ beforeEach(() => {
   unlink.mockResolvedValue(undefined);
 });
 
+/** Placeholder for the validated temp file in mocked located CLI output. */
+const MOCK_PATH = "/tmp/mock";
+
+function withConfigPath(output: string, args: unknown): string {
+  const flag = (args as string[]).find((a) => a.startsWith("--config-file="));
+  return output.replaceAll(
+    MOCK_PATH,
+    flag?.slice("--config-file=".length) ?? "",
+  );
+}
+
 async function setupDiagnostics(content: string, ghosttyOutput = "") {
   vi.useFakeTimers();
 
   execFile.mockImplementation(
-    (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+    (_cmd: unknown, args: unknown, _opts: unknown, callback: unknown) => {
       const cb = callback as (
         err: Error | null,
         stdout: string,
         stderr: string,
       ) => void;
       if (ghosttyOutput.trim()) {
-        cb(Object.assign(new Error("exit 1"), { code: 1 }), ghosttyOutput, "");
+        cb(
+          Object.assign(new Error("exit 1"), { code: 1 }),
+          withConfigPath(ghosttyOutput, args),
+          "",
+        );
       } else {
         cb(null, "", "");
       }
@@ -143,6 +158,22 @@ describe("parseGhosttyOutput", () => {
     const diags = parseGhosttyOutput(output, lines);
     expect(diags).toHaveLength(1);
     expect(diags[0]?.message).toContain("xxx");
+  });
+
+  it("skips located errors from other files, such as config-file includes", () => {
+    const output = [
+      "/private/var/T/ghostty-validate-abc:2:bogus-key: unknown field",
+      '/var/T/included:1:cursor-style: invalid value "nope"',
+    ].join("\n");
+    const lines = ["font-size = 14", "bogus-key = 1"];
+    const diags = parseGhosttyOutput(
+      output,
+      lines,
+      "/var/T/ghostty-validate-abc",
+    );
+    expect(diags.map((d) => [d.code, d.range.start.line])).toEqual([
+      ["unknown-key", 1],
+    ]);
   });
 
   it("points the range at the value, not the key", () => {
@@ -655,9 +686,11 @@ describe("diagnostics provider - validation lifecycle", () => {
     const callbacks: Array<
       (err: Error | null, stdout: string, stderr: string) => void
     > = [];
+    const argsList: unknown[] = [];
 
     execFile.mockImplementation(
-      (_cmd: unknown, _args: unknown, _opts: unknown, callback: unknown) => {
+      (_cmd: unknown, args: unknown, _opts: unknown, callback: unknown) => {
+        argsList.push(args);
         callbacks.push(
           callback as (
             err: Error | null,
@@ -703,7 +736,14 @@ describe("diagnostics provider - validation lifecycle", () => {
     handlers.onDidOpen?.({ document: doc1 });
     await flushTimers(300);
 
-    callbacks[0]?.(null, '/tmp/mock:1:font-size: invalid value "bad"', "");
+    callbacks[0]?.(
+      null,
+      withConfigPath(
+        `${MOCK_PATH}:1:font-size: invalid value "bad"`,
+        argsList[0],
+      ),
+      "",
+    );
     await Promise.resolve();
     await Promise.resolve();
 

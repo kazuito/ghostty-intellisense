@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 // Fake Ghostty CLI for E2E tests. Values are deliberately impossible for a
 // real install (font-size 42, "Fake Mono") so tests can prove it is in use.
-const { readFileSync } = require("node:fs");
+// `+validate-config` mirrors Ghostty 1.3.1's output formats; the integration
+// parity test checks each branch below against the real CLI.
+const { existsSync, readFileSync, realpathSync } = require("node:fs");
+const { dirname, isAbsolute, join } = require("node:path");
 
 const [command, ...rest] = process.argv.slice(2);
 const cursorStyles = ["bar", "block", "underline", "block_hollow"];
 const unknownKeys = new Set(["bogus-key", "font-sise"]);
+const themes = new Set(["Dracula"]);
 
 const outputs = {
   "--version": "Ghostty 0.0.0-fake\n",
@@ -19,23 +23,75 @@ if (command in outputs) {
   process.exit(0);
 }
 
-if (command === "+validate-config") {
-  const path = rest.find((a) => a.startsWith("--config-file=")).slice(14);
-  const errors = readFileSync(path, "utf8")
+function valueError(key, value) {
+  if (unknownKeys.has(key)) return "unknown field";
+  if (key === "cursor-style" && !cursorStyles.includes(value)) {
+    return `invalid value "${value}", valid values are: ${cursorStyles.join(", ")}`;
+  }
+  if (key === "font-size" && !/^\d+(\.\d+)?$/.test(value)) {
+    return `invalid value "${value}"`;
+  }
+  if (key === "font-thicken" && !["true", "false"].includes(value)) {
+    return `invalid value "${value}"`;
+  }
+  return null;
+}
+
+function entriesOf(path) {
+  return readFileSync(path, "utf8")
     .split("\n")
     .flatMap((line, i) => {
       const match = line.match(/^\s*([^#=\s][^=]*?)\s*=\s*(.*?)\s*$/);
-      if (!match) return [];
-      const [, key, value] = match;
-      const at = `${path}:${i + 1}:${key}`;
-      if (unknownKeys.has(key)) return [`${at}: unknown field`];
-      if (key === "cursor-style" && !cursorStyles.includes(value)) {
-        return [`${at}: invalid value "${value}", valid values are: ${cursorStyles.join(", ")}`];
-      }
-      return [];
+      return match ? [{ line: i + 1, key: match[1], value: match[2] }] : [];
     });
-  process.stdout.write(errors.map((e) => `${e}\n`).join(""));
-  process.exit(errors.length ? 1 : 0);
+}
+
+if (command === "+validate-config") {
+  const main = realpathSync(
+    rest.find((a) => a.startsWith("--config-file=")).slice(14),
+  );
+  const errors = [];
+  const notices = [];
+  const includes = [];
+  let themeLoaded = false;
+
+  for (const { line, key, value } of entriesOf(main)) {
+    const message = valueError(key, value);
+    if (message) errors.push({ at: `${main}:${line}:`, key, message });
+    if (key === "config-file") includes.push(value);
+    if (key === "theme") {
+      if (themes.has(value)) themeLoaded = true;
+      else
+        notices.push(
+          `theme "${value}" not found, tried path "/fake/themes/${value}"`,
+        );
+    }
+  }
+
+  for (const include of includes) {
+    const optional = include.startsWith("?");
+    const written = optional ? include.slice(1) : include;
+    const path = isAbsolute(written) ? written : join(dirname(main), written);
+    if (!existsSync(path)) {
+      if (!optional)
+        notices.push(`error opening config-file ${path}: error.FileNotFound`);
+      continue;
+    }
+    for (const { line, key, value } of entriesOf(path)) {
+      const message = valueError(key, value);
+      if (message) errors.push({ at: `${path}:${line}:`, key, message });
+    }
+  }
+
+  const lines = [
+    ...errors.map(
+      ({ at, key, message }) =>
+        `${themeLoaded ? "" : at}${key}: ${message}`,
+    ),
+    ...notices,
+  ];
+  process.stdout.write(lines.map((l) => `${l}\n`).join(""));
+  process.exit(lines.length ? 1 : 0);
 }
 
 process.exit(2);

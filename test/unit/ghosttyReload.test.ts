@@ -2,57 +2,55 @@ import { afterEach, describe, expect, it, mock } from "bun:test";
 import * as childProcess from "node:child_process";
 
 const cliOutput = new Map<string, string>();
-const execFile = mock(
-  (
-    _bin: string,
-    args: string[],
-    _opts: unknown,
-    callback: (err: Error | null, stdout: string) => void,
-  ) => {
-    const output = cliOutput.get(args.join(" "));
-    callback(
-      output === undefined ? new Error("not found") : null,
-      output ?? "",
-    );
-  },
-);
+function fakeExecFile(
+  _bin: string,
+  args: string[],
+  _opts: unknown,
+  callback: (err: Error | null, stdout: string) => void,
+) {
+  const output = cliOutput.get(args.join(" "));
+  callback(output === undefined ? new Error("not found") : null, output ?? "");
+}
+const execFile = mock(fakeExecFile);
 mock.module("node:child_process", () => ({ ...childProcess, execFile }));
 
-import { ghosttyActions, loadGhosttyActionsAsync } from "@/ghostty/actions";
-import { ghosttyDefaults, loadGhosttyDefaultsAsync } from "@/ghostty/defaults";
-import { ghosttyFonts, loadGhosttyFontsAsync } from "@/ghostty/fonts";
+import { fetchGhosttyActionsAsync, ghosttyActions } from "@/ghostty/actions";
+import { fetchGhosttyDefaultsAsync, ghosttyDefaults } from "@/ghostty/defaults";
+import { fetchGhosttyFontsAsync, ghosttyFonts } from "@/ghostty/fonts";
 import { clearGhosttyData, reloadGhosttyData } from "@/ghostty/reload";
 
 afterEach(() => {
   clearGhosttyData();
   cliOutput.clear();
   execFile.mockClear();
+  execFile.mockImplementation(fakeExecFile);
 });
 
-describe("async loaders", () => {
-  it("populates defaults from CLI output", async () => {
+describe("async fetchers", () => {
+  it("parses defaults from CLI output", async () => {
     cliOutput.set(
       "+show-config --default",
       "font-size = 13\nbackground = 1a1b26\n",
     );
-    await loadGhosttyDefaultsAsync();
-    expect(ghosttyDefaults.get("font-size")).toBe("13");
-    expect(ghosttyDefaults.get("background")).toBe("1a1b26");
+    const defaults = await fetchGhosttyDefaultsAsync();
+    expect(defaults.get("font-size")).toBe("13");
+    expect(defaults.get("background")).toBe("1a1b26");
   });
 
-  it("populates fonts, skipping indented lines", async () => {
+  it("parses fonts, skipping indented lines", async () => {
     cliOutput.set("+list-fonts", "JetBrains Mono\n  italic\nFira Code\n");
-    await loadGhosttyFontsAsync();
-    expect(ghosttyFonts).toEqual(["JetBrains Mono", "Fira Code"]);
+    expect(await fetchGhosttyFontsAsync()).toEqual([
+      "JetBrains Mono",
+      "Fira Code",
+    ]);
   });
 
-  it("populates actions from --docs output", async () => {
+  it("parses actions from --docs output", async () => {
     cliOutput.set(
       "+list-actions --docs",
       "copy_to_clipboard:\n  Copy the selection.\n\nnew_tab:\n  Open a new tab.\n",
     );
-    await loadGhosttyActionsAsync();
-    expect(ghosttyActions).toEqual([
+    expect(await fetchGhosttyActionsAsync()).toEqual([
       { name: "copy_to_clipboard", doc: "Copy the selection." },
       { name: "new_tab", doc: "Open a new tab." },
     ]);
@@ -89,5 +87,35 @@ describe("reloadGhosttyData", () => {
     expect(ghosttyDefaults.size).toBe(0);
     expect(ghosttyFonts).toEqual([]);
     expect(ghosttyActions).toEqual([]);
+  });
+
+  it("keeps the latest reload's data when an older one finishes later", async () => {
+    const delays: Record<string, number> = { "/slow/ghostty": 30 };
+    execFile.mockImplementation((bin, args, _opts, callback) => {
+      const output = args[0] === "+list-fonts" ? `${bin} Font\n` : "x = 1\n";
+      setTimeout(() => callback(null, output), delays[bin] ?? 0);
+    });
+
+    const slow = reloadGhosttyData("/slow/ghostty");
+    const fast = reloadGhosttyData("/fast/ghostty");
+    expect(await Promise.all([slow, fast])).toEqual([true, true]);
+
+    expect(ghosttyFonts).toEqual(["/fast/ghostty Font"]);
+  });
+
+  it("does not clear newer data when a superseded reload finds no CLI", async () => {
+    execFile.mockImplementation((bin, args, _opts, callback) => {
+      if (bin === "/missing/ghostty") {
+        setTimeout(() => callback(new Error("not found"), ""), 30);
+      } else {
+        callback(null, args[0] === "+list-fonts" ? "Fira Code\n" : "x = 1\n");
+      }
+    });
+
+    const missing = reloadGhosttyData("/missing/ghostty");
+    await reloadGhosttyData("/bin/ghostty");
+    expect(await missing).toBe(false);
+
+    expect(ghosttyFonts).toEqual(["Fira Code"]);
   });
 });

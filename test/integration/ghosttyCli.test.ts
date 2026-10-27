@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "bun:test";
-import { unlink } from "node:fs/promises";
+import { mkdtemp, rm, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { configMetadata } from "@/core/schema";
 import {
@@ -32,11 +33,18 @@ async function validate(text: string, executablePath = "") {
   );
   return {
     reportedErrors,
-    diagnostics: parseGhosttyOutput(output, text.split("\n")),
+    diagnostics: parseGhosttyOutput(output, text.split("\n"), tmpPath),
   };
 }
 
-afterAll(() => unlink(tmpPath).catch(() => {}));
+const includeDir = await mkdtemp(path.join(tmpdir(), "ghostty-include-"));
+const included = path.join(includeDir, "included");
+await writeFile(included, "cursor-style = nope\nfont-size = 99\n");
+
+afterAll(async () => {
+  await unlink(tmpPath).catch(() => {});
+  await rm(includeDir, { recursive: true, force: true });
+});
 
 describe.skipIf(!available)("real ghostty CLI", () => {
   it("accepts a valid config", async () => {
@@ -66,13 +74,38 @@ describe.skipIf(!available)("real ghostty CLI", () => {
     ]);
   });
 
-  it("matches the E2E fake CLI's validate-config output", async () => {
-    const text =
-      "font-size = 14\nbogus-key = 1\ncursor-style = nope\nfont-sise = 12\ncursor-style = bar\n";
-    const fake = await validate(text, fakeGhostty);
-    const real = await validate(text);
-    expect(fake).toEqual(real);
-  });
+  it.each([
+    [
+      "located errors",
+      "font-size = 14\nbogus-key = 1\ncursor-style = nope\nfont-sise = 12\ncursor-style = bar\n",
+    ],
+    [
+      "non-enum values",
+      "font-size = abc\nfont-thicken = maybe\nfont-thicken = true\nfont-size = 13.5\n",
+    ],
+    [
+      "odd spacing, UTF-16 and CRLF",
+      "  font-sise = 1\ncursor-style=nope   \r\ncursor-style = \u{1F642}\n",
+    ],
+    [
+      "unlocated errors once a theme loads",
+      "theme = Dracula\nfont-size = 14\nbogus-key = 1\ncursor-style = nope\n",
+    ],
+    ["a missing theme", "theme = Missing Theme\nbogus-key = 1\n"],
+    [
+      "config-file includes",
+      `font-size = 14\nconfig-file = ${included}\nbogus-key = 1\nconfig-file = ?/nonexistent\n`,
+    ],
+    ["only include errors", `config-file = ${included}\n`],
+    ["a missing config-file", "config-file = /nonexistent/ghostty\n"],
+  ])(
+    "matches the E2E fake CLI's validate-config output: %s",
+    async (_, text) => {
+      const fake = await validate(text, fakeGhostty);
+      const real = await validate(text);
+      expect(fake).toEqual(real);
+    },
+  );
 
   it("produces output the data loaders can parse", async () => {
     const [defaults, fonts, actions] = await Promise.all([
