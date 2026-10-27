@@ -4,6 +4,23 @@ All notable changes to the "ghostty" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.0.9] - 2026-10-27
+
+### Fixed
+
+- Errors reported for files pulled in with `config-file` no longer appear on
+  unrelated lines of the file being edited
+- Diagnostics, quick fixes, and outline ranges no longer include the `\r` of
+  CRLF line endings
+- Changing `ghostty.executablePath` quickly can no longer leave defaults,
+  fonts, and actions from the previous executable in place when its CLI
+  responds last
+- Toggle Line Comment now works on VS Code 1.91
+
+### Changed
+
+- Updated the bundled language client/server libraries to v11
+
 ## [1.0.8] - 2026-10-05
 
 ### Fixed
