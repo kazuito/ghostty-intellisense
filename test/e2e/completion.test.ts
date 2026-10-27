@@ -1,14 +1,14 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import {
+  cliActions,
   closeAll,
-  FAKE_FONT_SIZE_DEFAULT,
-  FAKE_GHOSTTY,
+  GHOSTTY_BIN,
   hoverText,
   openDoc,
   resetSettings,
   setSetting,
-  useFakeGhostty,
+  useGhostty,
   waitFor,
 } from "./helpers";
 
@@ -58,7 +58,7 @@ const values = (content: string) =>
 const labels = (items: Item[]) => items.map((item) => item.label);
 
 suite("completion", () => {
-  suiteSetup(useFakeGhostty);
+  suiteSetup(useGhostty);
   teardown(closeAll);
   suiteTeardown(resetSettings);
 
@@ -83,10 +83,6 @@ suite("completion", () => {
     }
     const fontSize = items.find((item) => item.label === "font-size");
     assert.strictEqual(fontSize?.insertText, "font-size = ");
-    assert.match(
-      fontSize?.detail ?? "",
-      new RegExp(`\\(default: ${FAKE_FONT_SIZE_DEFAULT}\\)$`),
-    );
   });
 
   test("offers nothing inside comments", async () => {
@@ -142,35 +138,28 @@ suite("completion", () => {
     );
   });
 
-  test("completes installed fonts from the CLI", async () => {
-    assert.deepStrictEqual(labels(await values("font-family = ")).sort(), [
-      "Fake Mono",
-      "Fake Sans",
-    ]);
-  });
-
-  test("matches font prefixes that contain spaces", async () => {
-    const content = "font-family = Fake S";
-    const items = await values(content);
-    assert.deepStrictEqual(labels(items), ["Fake Sans"]);
-    assert.deepStrictEqual(items[0]?.replace, [14, content.length]);
-  });
-
   test("completes keybind actions from the CLI", async () => {
     const found = labels(await values("keybind = cmd+t="));
-    assert.deepStrictEqual(found.sort(), ["close_surface", "new_tab"]);
+    assert.ok(found.includes("new_tab"));
+    assert.deepStrictEqual(
+      found.sort(),
+      cliActions()
+        .map((action) => action.name)
+        .sort(),
+    );
   });
 
   test("filters keybind actions by prefix with their docs", async () => {
-    const content = "keybind = cmd+w=clo";
+    const content = "keybind = cmd+w=close_s";
     const items = await values(content);
     assert.deepStrictEqual(items, [
       {
         label: "close_surface",
         kind: vscode.CompletionItemKind.Value,
-        detail: "Close the current surface.",
+        detail:
+          'Close the current "surface", whether that is a window, tab, split, etc.',
         insertText: "close_surface",
-        replace: [content.length - 3, content.length],
+        replace: [content.length - 7, content.length],
       },
     ]);
   });
@@ -189,7 +178,7 @@ suite("completion", () => {
       assert.ok(labels(await values("background = re")).includes("red"));
       assert.ok(labels(await values("cursor-style = ")).includes("bar"));
     } finally {
-      await setSetting("executablePath", FAKE_GHOSTTY);
+      await setSetting("executablePath", GHOSTTY_BIN);
     }
   });
 });

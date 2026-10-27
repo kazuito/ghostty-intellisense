@@ -1,13 +1,35 @@
-import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import * as vscode from "vscode";
+import { type GhosttyAction, parseActionsOutput } from "@/ghostty/actions";
+import { GHOSTTY_CLI_FLAGS } from "@/ghostty/constants";
 
 export const LANGUAGE_ID = "ghostty-config";
-export const FAKE_GHOSTTY = path.resolve(
-  __dirname,
-  "../../test/e2e/fixtures/bin/ghostty",
-);
-/** Default `font-size` reported by the fake CLI; no real install uses it. */
-export const FAKE_FONT_SIZE_DEFAULT = "42";
+
+/** Bump together with `GHOSTTY_DEB_URL` in .github/workflows/ci.yml. */
+export const GHOSTTY_VERSION = "1.3.1";
+
+const MACOS_APP_BIN = "/Applications/Ghostty.app/Contents/MacOS/ghostty";
+
+/** `GHOSTTY_BIN` points the suite at a specific build, e.g. a pinned copy. */
+export const GHOSTTY_BIN =
+  process.env.GHOSTTY_BIN ||
+  (process.platform === "darwin" && existsSync(MACOS_APP_BIN)
+    ? MACOS_APP_BIN
+    : "ghostty");
+
+function ghostty(...args: string[]): string {
+  return execFileSync(GHOSTTY_BIN, args, {
+    encoding: "utf8",
+    timeout: 10_000,
+  });
+}
+
+export function cliActions(): GhosttyAction[] {
+  return parseActionsOutput(
+    ghostty(GHOSTTY_CLI_FLAGS.LIST_ACTIONS, GHOSTTY_CLI_FLAGS.DOCS),
+  );
+}
 
 export async function waitFor<T>(
   probe: () => T | Thenable<T>,
@@ -74,16 +96,22 @@ export async function hoverText(
 }
 
 /**
- * Points the extension at the fake CLI and waits until the language server
- * serves its data, so no test can silently pass against a real Ghostty.
+ * Points the extension at the pinned Ghostty release and waits until the
+ * language server serves its data, so no test runs against another version.
  */
-export async function useFakeGhostty(): Promise<void> {
+export async function useGhostty(): Promise<void> {
+  const [version] = ghostty("--version").split("\n");
+  if (version !== `Ghostty ${GHOSTTY_VERSION}`) {
+    throw new Error(
+      `${GHOSTTY_BIN} reports "${version}", expected Ghostty ${GHOSTTY_VERSION}; install it or set GHOSTTY_BIN`,
+    );
+  }
   await resetSettings();
-  await setSetting("executablePath", FAKE_GHOSTTY);
+  await setSetting("executablePath", GHOSTTY_BIN);
   const doc = await openDoc("font-size = 14");
   await waitFor(
     () => hoverText(doc, new vscode.Position(0, 2)),
-    (text) => text.includes(`\`${FAKE_FONT_SIZE_DEFAULT}\``),
+    (text) => text.includes("**Default:**"),
     20_000,
   );
   await closeAll();
@@ -146,7 +174,7 @@ export async function waitForCodes(
 }
 
 /**
- * A line the fake CLI always rejects. Waiting for its diagnostic proves a
+ * A line Ghostty always rejects. Waiting for its diagnostic proves a
  * full CLI round trip finished, so absence assertions can't pass early.
  */
 export const SENTINEL = "bogus-key = 1";

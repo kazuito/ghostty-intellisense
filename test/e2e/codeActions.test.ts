@@ -4,7 +4,7 @@ import {
   closeAll,
   openDoc,
   resetSettings,
-  useFakeGhostty,
+  useGhostty,
   waitForCodes,
 } from "./helpers";
 
@@ -43,7 +43,7 @@ async function fixesFor(content: string, codes: string[]) {
 }
 
 suite("code actions", () => {
-  suiteSetup(useFakeGhostty);
+  suiteSetup(useGhostty);
   teardown(closeAll);
   suiteTeardown(resetSettings);
 

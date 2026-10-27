@@ -2,14 +2,13 @@ import * as assert from "node:assert";
 import * as vscode from "vscode";
 import {
   closeAll,
-  FAKE_FONT_SIZE_DEFAULT,
-  FAKE_GHOSTTY,
+  GHOSTTY_BIN,
   hoverText,
   LANGUAGE_ID,
   openDoc,
   resetSettings,
   setSetting,
-  useFakeGhostty,
+  useGhostty,
   waitFor,
 } from "./helpers";
 
@@ -31,7 +30,7 @@ function rangeTuple(range: vscode.Range) {
 }
 
 suite("language", () => {
-  suiteSetup(useFakeGhostty);
+  suiteSetup(useGhostty);
   teardown(closeAll);
   suiteTeardown(resetSettings);
 
@@ -57,11 +56,10 @@ suite("language", () => {
     }
   });
 
-  test("hover shows description, CLI default, and reference link", async () => {
+  test("hover shows description and reference link", async () => {
     const doc = await openDoc("font-size = 14");
     const text = await hoverText(doc, new vscode.Position(0, 3));
     assert.match(text, /\*\*font-size\*\*/);
-    assert.ok(text.includes(`**Default:** \`${FAKE_FONT_SIZE_DEFAULT}\``));
     assert.ok(
       text.includes("https://ghostty.org/docs/config/reference#font-size"),
     );
@@ -84,7 +82,7 @@ suite("language", () => {
   });
 
   test("hover marks an empty CLI default", async () => {
-    const doc = await openDoc("font-family = Fake Mono");
+    const doc = await openDoc("font-family = JetBrains Mono");
     const text = await hoverText(doc, new vscode.Position(0, 2));
     assert.ok(text.includes("**Default:** *(empty)*"), text);
   });
@@ -162,7 +160,7 @@ suite("language", () => {
       (t) => !hasDefault(t),
     );
 
-    await setSetting("executablePath", FAKE_GHOSTTY);
+    await setSetting("executablePath", GHOSTTY_BIN);
     await waitFor(() => hoverText(doc, position), hasDefault);
   });
 });

@@ -53,7 +53,7 @@ test/
 ├── unit/           # bun test suite, one file per feature/module, plus
 │                   # fast-check properties in properties.test.ts
 ├── integration/    # bun tests against the real Ghostty CLI (skipped locally if absent)
-├── e2e/            # VS Code E2E (mocha tdd) against a fake Ghostty CLI
+├── e2e/            # VS Code E2E (mocha tdd) against the pinned real Ghostty CLI
 └── grammar/        # vscode-tmgrammar-test scope assertions
 ```
 
@@ -145,16 +145,18 @@ bun run test:e2e   # Dev bundle + VS Code E2E via @vscode/test-cli
   `ubuntu-24.04`, and `publish.yml` gates releases on that workflow.
   Overlay values the installed Ghostty rejects go in its
   `newerThanInstalled` skip list only when they are confirmed upstream.
-  A parity test runs the E2E fake and the real CLI on the same config and
-  expects identical diagnostics.
 - **E2E** (`test/e2e/`, config in `.vscode-test.mjs`): launches VS Code and
-  drives the extension through `vscode.execute*Provider` commands. Each
-  suite calls `useFakeGhostty()`, which points `ghostty.executablePath` at
-  `test/e2e/fixtures/bin/ghostty` and waits for its impossible `font-size`
-  default (`42`) so tests can never pass against a real install. Extend the
-  fake when E2E needs new CLI behavior; keep its output in Ghostty's real
-  formats (the integration parity test checks `+validate-config`). Runs against both VS Code `stable` and the `engines.vscode`
-  minimum (`1.91.0`); CI runs it under `xvfb-run`. `@vscode/test-electron`
+  drives the extension through `vscode.execute*Provider` commands against
+  the real Ghostty CLI; there is no fake. Each suite calls `useGhostty()`,
+  which fails unless the binary reports `GHOSTTY_VERSION` (pinned in
+  `test/e2e/helpers.ts`, bumped together with `GHOSTTY_DEB_URL` in
+  `ci.yml`), then points `ghostty.executablePath` at it. The binary is
+  `GHOSTTY_BIN` if set, else `/Applications/Ghostty.app` on macOS, else
+  `ghostty` on PATH. Version-dependent output (messages, action docs) may
+  be hardcoded; don't assert machine-dependent data (installed fonts,
+  platform-specific defaults like `font-size`). Runs against both
+  VS Code `stable` and the `engines.vscode` minimum (`1.91.0`); CI runs it
+  under `xvfb-run`. `@vscode/test-electron`
   always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
   the `restrictedConfigurations` declaration and `ghostty.format.*` /
   `DEFAULT_FORMATTER_OPTIONS` parity instead.

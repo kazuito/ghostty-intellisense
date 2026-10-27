@@ -7,7 +7,7 @@ import {
   closeAll,
   codeOf,
   diagnosticsOf,
-  FAKE_GHOSTTY,
+  GHOSTTY_BIN,
   openDoc,
   replaceText,
   resetSettings,
@@ -15,7 +15,7 @@ import {
   setSetting,
   sleep,
   summarize,
-  useFakeGhostty,
+  useGhostty,
   waitFor,
   waitForCodes,
 } from "./helpers";
@@ -28,7 +28,7 @@ suite("diagnostics", () => {
     includeDir = mkdtempSync(path.join(tmpdir(), "ghostty-e2e-"));
     included = path.join(includeDir, "included");
     writeFileSync(included, "cursor-style = nope\n");
-    await useFakeGhostty();
+    await useGhostty();
   });
   teardown(closeAll);
   suiteTeardown(async () => {
@@ -265,7 +265,7 @@ suite("diagnostics", () => {
       await sleep(1_000);
       assert.deepStrictEqual(diagnosticsOf(doc).map(codeOf), ["duplicate-key"]);
     } finally {
-      await setSetting("executablePath", FAKE_GHOSTTY);
+      await setSetting("executablePath", GHOSTTY_BIN);
     }
     await waitForCodes(doc, ["duplicate-key", "unknown-key"]);
   });
@@ -275,7 +275,7 @@ suite("diagnostics", () => {
       "font-size = 14",
       ...Array.from(
         { length: 3_000 },
-        (_, i) => `keybind = ctrl+shift+f${i}=new_tab`,
+        (_, i) => `keybind = ctrl+shift+f${(i % 12) + 1}=new_tab`,
       ),
       SENTINEL,
     ];

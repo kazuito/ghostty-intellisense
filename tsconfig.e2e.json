@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "types": ["node", "mocha"],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
-  "include": ["test/e2e/**/*"]
+  "include": ["test/e2e/**/*"],
+  "references": [{ "path": "./tsconfig.app.json" }]
 }

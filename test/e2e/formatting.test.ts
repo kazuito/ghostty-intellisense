@@ -5,7 +5,7 @@ import {
   openDoc,
   resetSettings,
   setSetting,
-  useFakeGhostty,
+  useGhostty,
 } from "./helpers";
 
 const MESSY =
@@ -29,7 +29,7 @@ async function format(content: string): Promise<string> {
 }
 
 suite("formatting", () => {
-  suiteSetup(useFakeGhostty);
+  suiteSetup(useGhostty);
   teardown(async () => {
     await closeAll();
     await resetSettings("format.");
