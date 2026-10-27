@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, mock, vi } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+  vi,
+} from "bun:test";
 import * as childProcess from "node:child_process";
 import * as fsPromises from "node:fs/promises";
 import {
@@ -33,9 +41,12 @@ async function flushTimers(ms?: number) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.useRealTimers();
   writeFile.mockResolvedValue(undefined);
   unlink.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 /** Placeholder for the validated temp file in mocked located CLI output. */
