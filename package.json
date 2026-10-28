@@ -43,7 +43,7 @@
     "bundle": "NODE_ENV=production rolldown --config rolldown.config.ts",
     "bundle:dev": "rolldown --config rolldown.config.ts",
     "watch": "rolldown --config rolldown.config.ts --watch",
-    "gen:config": "bun scripts/gen-config.ts && biome format --write src/generated/config-keys.ts syntaxes/ghostty-config.tmLanguage.json",
+    "gen:config": "bun scripts/gen-config.ts && biome format --write src/generated/config-keys.ts src/generated/colors.ts syntaxes/ghostty-config.tmLanguage.json",
     "lint": "biome lint",
     "format": "biome format --write",
     "check": "biome check --write --unsafe && bun run typecheck",

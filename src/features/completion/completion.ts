@@ -9,8 +9,8 @@ import {
   ghosttyConfigOptions,
   optionByKey,
 } from "@/core/schema";
+import { ghosttyColors } from "@/generated/colors";
 import { ghosttyActions } from "@/ghostty/actions";
-import { ghosttyColors } from "@/ghostty/colors";
 import { ghosttyDefaults } from "@/ghostty/defaults";
 import { ghosttyFonts } from "@/ghostty/fonts";
 

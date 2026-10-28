@@ -13,7 +13,8 @@ files ending in `.ghostty`.
   `src/server.ts` only wires providers together; each feature owns its
   LSP adapter and logic under `src/features/<feature>/`. Shared
   config-domain primitives live in `src/core/`, Ghostty CLI integration in
-  `src/ghostty/`, generated config keys in `src/generated/`.
+  `src/ghostty/`, generated config keys and named colors in
+  `src/generated/`.
 - Builds are bundled with Rolldown into `out/extension.js` and
   `out/server.js`; there is no standalone `compile` script.
 - The server shells out to the Ghostty CLI (`ghostty.executablePath`) at
@@ -25,6 +26,10 @@ files ending in `.ghostty`.
   `scripts/gen-config.ts` (run `bun run gen:config`). The script ports
   upstream's helpgen + webgen, so its output matches the website's
   `reference.mdx` without waiting for the website to sync a release.
+  The same script turns the release's `src/terminal/res/rgb.txt` (the
+  X11 table behind `ghostty +list-colors`) into `src/generated/colors.ts`,
+  sorted like the CLI. Colors are never loaded from the CLI at runtime,
+  since its output can be truncated in some environments.
   Committed; the build never touches the network.
 - `src/core/schema.ts` merges the generated list with a hand-curated
   overlay (`configMetadata`) for metadata the docs don't expose
@@ -49,9 +54,10 @@ src/
 ├── features/       # hover, completion, codeActions, documentSymbols,
 │                   # diagnostics, formatter — each provider.ts + logic
 ├── core/           # document.ts, schema.ts, constants.ts
-├── ghostty/        # CLI integration: defaults, fonts, colors, actions, reload
+├── ghostty/        # CLI integration: defaults, fonts, actions, reload
 └── generated/
-    └── config-keys.ts   # Generated config keys + descriptions (do not edit)
+    ├── config-keys.ts   # Generated config keys + descriptions (do not edit)
+    └── colors.ts        # Generated X11 named colors (do not edit)
 
 test/
 ├── unit/           # bun test suite, one file per feature/module, plus
@@ -123,7 +129,7 @@ matches the generated and renamed key set.
 ## Build And Verification
 
 ```bash
-bun run gen:config # Regenerate config keys/descriptions + grammar from the pinned Config.zig
+bun run gen:config # Regenerate config keys/descriptions, grammar, and colors from the pinned source
 bun run bundle     # Rolldown bundle to out/
 bun run watch      # Rolldown watch build
 bun run typecheck  # Type-check without emitting
@@ -188,10 +194,10 @@ bun run setup:ghostty # Install the pinned Ghostty (macOS); no-op when current
 
 ## Working Rules For Future Changes
 
-- To pick up upstream key/description changes, bump the pinned release and
-  run `bun run gen:config`, then commit the regenerated
-  `src/generated/config-keys.ts` and grammar. Don't hand-edit the generated
-  file or the grammar's key/enum alternations.
+- To pick up upstream key/description or color changes, bump the pinned
+  release and run `bun run gen:config`, then commit the regenerated
+  `src/generated/` files and grammar. Don't hand-edit the generated files
+  or the grammar's key/enum alternations.
 - When upstream renames a key or deprecates a value through its
   `compatibility` table, add it to `renamedKeys` or `deprecatedValues`; the
   CLI integration test checks the real Ghostty still accepts every entry.
