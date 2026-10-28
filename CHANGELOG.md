@@ -4,6 +4,31 @@ All notable changes to the "ghostty" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Added
+
+- Color swatches and a color picker for hex and named colors, including
+  `palette` entries
+- `theme` completion from the installed Ghostty's themes, with `light:` /
+  `dark:` prefixes
+- `keybind` completion for the `global:`, `all:`, `unconsumed:`, and
+  `performable:` prefixes and for modifiers
+- Hovering a keybind action shows its documentation
+- Key completions show their documentation in the details pane, and keys
+  with known values open value suggestions right after `key = `
+- **Ghostty: Open Config** command
+- Files whose first line is a Vim modeline such as `# vim: ft=ghostty` are
+  recognized as Ghostty configs
+
+### Fixed
+
+- Keybind actions are completed after a trigger that ends in a literal `=`,
+  such as `super+shift+==`
+- `window-padding-color` completes `background`, `extend`, and
+  `extend-always` instead of color names Ghostty rejects, and `bold-color`
+  offers `bright` alongside colors
+
 ## [1.0.11] - 2026-10-29
 
 ### Changed

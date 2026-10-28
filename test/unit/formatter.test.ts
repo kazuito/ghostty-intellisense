@@ -414,7 +414,7 @@ describe("formatDocument", () => {
     "cursor-color",
     "selection-foreground",
     "selection-background",
-    "window-padding-color",
+    "bold-color",
   ])("normalizes hex color values for %s (schema-driven assets)", (key) => {
     const input = `${key} = aabbcc\n`;
     expect(

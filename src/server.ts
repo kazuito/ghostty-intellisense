@@ -8,6 +8,7 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { GHOSTTY_CONFIG_SECTION, GHOSTTY_DOCS_URL } from "./core/constants";
 import { registerCodeActionProvider } from "./features/codeActions/provider";
+import { registerColorProvider } from "./features/colors/provider";
 import { registerCompletionProvider } from "./features/completion/provider";
 import { registerDiagnosticsProvider } from "./features/diagnostics/provider";
 import { registerDocumentSymbolProvider } from "./features/documentSymbols/provider";
@@ -27,6 +28,7 @@ connection.onInitialize(() => ({
     documentFormattingProvider: true,
     codeActionProvider: true,
     documentSymbolProvider: true,
+    colorProvider: true,
   },
 }));
 
@@ -39,6 +41,7 @@ const { revalidateOpenDocuments } = registerDiagnosticsProvider(
 registerFormatterProvider(connection, documents);
 registerCodeActionProvider(connection, documents);
 registerDocumentSymbolProvider(connection, documents);
+registerColorProvider(connection, documents);
 
 async function promptGhosttyNotFound(): Promise<void> {
   const extras =

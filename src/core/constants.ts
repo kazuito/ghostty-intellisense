@@ -23,3 +23,5 @@ export const GHOSTTY_FORMAT_CONFIG_SECTION =
 export const GHOSTTY_DOCS_URL = "https://ghostty.org" as const;
 export const GHOSTTY_CONFIG_REFERENCE_URL =
   `${GHOSTTY_DOCS_URL}/docs/config/reference#` as const;
+export const GHOSTTY_KEYBIND_REFERENCE_URL =
+  `${GHOSTTY_DOCS_URL}/docs/config/keybind/reference#` as const;

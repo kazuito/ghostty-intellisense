@@ -12,6 +12,7 @@ import { GHOSTTY_CLI_FLAGS } from "@/ghostty/constants";
 import { parseDefaultsOutput } from "@/ghostty/defaults";
 import { parseFontsOutput } from "@/ghostty/fonts";
 import { runGhosttyAsync } from "@/ghostty/ghostty";
+import { parseThemesOutput } from "@/ghostty/themes";
 import {
   GHOSTTY_PIN,
   ghosttyVersionOf,
@@ -48,6 +49,13 @@ afterAll(async () => {
 });
 
 describe.skipIf(!available)("real ghostty CLI", () => {
+  it("accepts keybinds whose trigger is a literal `=`", async () => {
+    const { reportedErrors } = await validate(
+      "keybind = super+shift+==equalize_splits\nkeybind = ==ignore\n",
+    );
+    expect(reportedErrors).toBe(false);
+  });
+
   it("accepts a valid config", async () => {
     const { reportedErrors, diagnostics } = await validate(
       "font-size = 14\ncursor-style = bar\nkeybind = cmd+t=new_tab\n",
@@ -76,7 +84,7 @@ describe.skipIf(!available)("real ghostty CLI", () => {
   });
 
   it("produces output the data loaders can parse", async () => {
-    const [defaults, fonts, actions] = await Promise.all([
+    const [defaults, fonts, actions, themes] = await Promise.all([
       runGhosttyAsync(
         [GHOSTTY_CLI_FLAGS.SHOW_CONFIG, GHOSTTY_CLI_FLAGS.DEFAULT],
         ghostty,
@@ -86,10 +94,20 @@ describe.skipIf(!available)("real ghostty CLI", () => {
         [GHOSTTY_CLI_FLAGS.LIST_ACTIONS, GHOSTTY_CLI_FLAGS.DOCS],
         ghostty,
       ),
+      runGhosttyAsync(
+        [GHOSTTY_CLI_FLAGS.LIST_THEMES, GHOSTTY_CLI_FLAGS.PLAIN],
+        ghostty,
+      ),
     ]);
     expect(parseDefaultsOutput(defaults).has("font-size")).toBe(true);
     expect(parseFontsOutput(fonts).length).toBeGreaterThan(0);
     expect(parseActionsOutput(actions).map((a) => a.name)).toContain("new_tab");
+    const themeNames = parseThemesOutput(themes);
+    expect(themeNames).toContain("Catppuccin Mocha");
+    expect(themeNames).toContain("datum (dark)");
+    expect(
+      themeNames.filter((name) => / \((?:user|resources)\)$/.test(name)),
+    ).toEqual([]);
   });
 
   // Overlay values the installed Ghostty rejects, pending confirmation that

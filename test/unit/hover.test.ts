@@ -1,9 +1,10 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import type {
   Hover,
   TextDocumentPositionParams,
 } from "vscode-languageserver/node";
 import { registerHoverProvider } from "@/features/hover/provider";
+import { ghosttyActions } from "@/ghostty/actions";
 import {
   createDocument,
   createMockConnection,
@@ -107,5 +108,39 @@ describe("hover provider", () => {
   it("returns null when hovering a different line (comment)", () => {
     const hover = setupHover("# comment\nfont-size = 14");
     expect(hover(0, 0)).toBeNull();
+  });
+});
+
+describe("hover provider - keybind actions", () => {
+  beforeEach(() => {
+    ghosttyActions.push({
+      name: "equalize_splits",
+      doc: "Equalize all splits.",
+    });
+  });
+
+  afterEach(() => {
+    ghosttyActions.length = 0;
+  });
+
+  const line = "keybind = super+shift+==equalize_splits";
+  const textAt = (character: number) =>
+    (setupHover(line)(0, character)?.contents as { value: string } | undefined)
+      ?.value;
+
+  it("documents the action under the cursor", () => {
+    expect(textAt(line.length - 3)).toBe(
+      "**equalize_splits**\n\nEqualize all splits.\n\n[Documentation](https://ghostty.org/docs/config/keybind/reference#equalize_splits)",
+    );
+  });
+
+  it("documents the keybind key over the trigger", () => {
+    expect(textAt(line.indexOf("=="))).toStartWith("**keybind**");
+  });
+
+  it("falls back to the key docs for unknown actions", () => {
+    const hover = setupHover("keybind = ctrl+a=bogus");
+    const contents = hover(0, 20)?.contents as { value: string };
+    expect(contents.value).toStartWith("**keybind**");
   });
 });

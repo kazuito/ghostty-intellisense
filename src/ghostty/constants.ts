@@ -7,8 +7,10 @@ export const GHOSTTY_CLI_FLAGS = {
   SHOW_CONFIG: "+show-config",
   LIST_FONTS: "+list-fonts",
   LIST_ACTIONS: "+list-actions",
+  LIST_THEMES: "+list-themes",
   DEFAULT: "--default",
   DOCS: "--docs",
+  PLAIN: "--plain",
 } as const;
 
 export const GHOSTTY_CONFIG_FILE_FLAG_PREFIX = "--config-file=" as const;

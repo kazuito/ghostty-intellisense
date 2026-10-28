@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import type {
-  CompletionList,
-  TextDocumentPositionParams,
+import {
+  CompletionItemKind,
+  type CompletionList,
+  type TextDocumentPositionParams,
 } from "vscode-languageserver/node";
 import { registerCompletionProvider } from "@/features/completion/provider";
 import { ghosttyActions } from "@/ghostty/actions";
+import { ghosttyThemes } from "@/ghostty/themes";
 import {
   createDocument,
   createMockConnection,
@@ -344,5 +346,163 @@ describe("completion provider - keybind action completions", () => {
     const result = complete(0, 18);
     const labels = result?.items.map((i) => i.label) ?? [];
     expect(labels).not.toContain("copy_to_clipboard");
+  });
+});
+
+describe("completion provider - keybind triggers", () => {
+  beforeEach(() => {
+    ghosttyActions.push(
+      { name: "equalize_splits", doc: "Equalize all splits." },
+      { name: "new_tab", doc: "Open a new tab.\n\nMore detail." },
+    );
+  });
+
+  afterEach(() => {
+    ghosttyActions.length = 0;
+  });
+
+  const labelsAt = (line: string) =>
+    setupCompletion(line)(0, line.length)?.items.map((i) => i.label);
+
+  it("treats `==` as a literal `=` key before the separator", () => {
+    expect(labelsAt("keybind = super+shift+==eq")).toEqual(["equalize_splits"]);
+  });
+
+  it("completes actions after flags", () => {
+    expect(labelsAt("keybind = global:ctrl+a=new")).toEqual(["new_tab"]);
+  });
+
+  it("attaches the full action docs", () => {
+    const line = "keybind = ctrl+t=new";
+    const item = setupCompletion(line)(0, line.length)?.items[0];
+    expect(item?.documentation).toEqual({
+      kind: "markdown",
+      value: "Open a new tab.\n\nMore detail.",
+    });
+  });
+
+  it("offers prefixes and modifiers at the start of a trigger", () => {
+    expect(labelsAt("keybind = ")).toEqual([
+      "global:",
+      "all:",
+      "unconsumed:",
+      "performable:",
+      "ctrl+",
+      "shift+",
+      "alt+",
+      "super+",
+    ]);
+  });
+
+  it("skips flags already used and modifiers already in the step", () => {
+    expect(labelsAt("keybind = global:cmd+")).toEqual([
+      "ctrl+",
+      "shift+",
+      "alt+",
+    ]);
+  });
+
+  it("restarts modifiers after a sequence step", () => {
+    expect(labelsAt("keybind = ctrl+a>")).toEqual([
+      "ctrl+",
+      "shift+",
+      "alt+",
+      "super+",
+    ]);
+  });
+
+  it("replaces only the token being typed and reopens suggestions", () => {
+    const line = "keybind = ctrl+sh";
+    const items = setupCompletion(line)(0, line.length)?.items ?? [];
+    expect(items.map((i) => i.label)).toEqual(["shift+"]);
+    expect(items[0].kind).toBe(CompletionItemKind.Keyword);
+    expect(items[0].textEdit).toMatchObject({
+      range: { start: { character: 15 }, end: { character: 17 } },
+      newText: "shift+",
+    });
+    expect(items[0].command?.command).toBe("editor.action.triggerSuggest");
+  });
+});
+
+describe("completion provider - themes", () => {
+  beforeEach(() => {
+    ghosttyThemes.push("Catppuccin Latte", "Catppuccin Mocha", "Dracula");
+  });
+
+  afterEach(() => {
+    ghosttyThemes.length = 0;
+  });
+
+  const itemsAt = (line: string) =>
+    setupCompletion(line)(0, line.length)?.items ?? [];
+
+  it("offers CLI themes and light/dark prefixes", () => {
+    expect(itemsAt("theme = ").map((i) => i.label)).toEqual([
+      "light:",
+      "dark:",
+      "Catppuccin Latte",
+      "Catppuccin Mocha",
+      "Dracula",
+    ]);
+  });
+
+  it("completes the theme name after a mode prefix", () => {
+    const line = "theme = light:Catppuccin Latte,dark:Catppuccin M";
+    const items = itemsAt(line);
+    expect(items.map((i) => i.label)).toEqual(["Catppuccin Mocha"]);
+    expect(items[0].textEdit).toMatchObject({
+      range: { start: { character: line.length - 12 } },
+    });
+  });
+
+  it("matches theme names case-insensitively", () => {
+    const line = "theme = dark:cat";
+    expect(itemsAt(line).map((i) => i.label)).toEqual([
+      "Catppuccin Latte",
+      "Catppuccin Mocha",
+    ]);
+  });
+
+  it("returns null without the CLI", () => {
+    ghosttyThemes.length = 0;
+    expect(setupCompletion("theme = ")(0, 8)).toBeNull();
+  });
+});
+
+describe("completion provider - key documentation", () => {
+  it("puts the description in markdown docs and reopens value suggestions", () => {
+    const items = setupCompletion("cursor-sty")(0, 10)?.items ?? [];
+    const item = items.find((i) => i.label === "cursor-style");
+    expect(item?.documentation).toMatchObject({ kind: "markdown" });
+    expect(
+      (item?.documentation as { value: string } | undefined)?.value,
+    ).toEndWith("(https://ghostty.org/docs/config/reference#cursor-style)");
+    expect(item?.command?.command).toBe("editor.action.triggerSuggest");
+  });
+
+  it("does not reopen suggestions for keys without value suggestions", () => {
+    const items = setupCompletion("font-siz")(0, 8)?.items ?? [];
+    const item = items.find((i) => i.label === "font-size");
+    expect(item).toBeDefined();
+    expect(item?.command).toBeUndefined();
+  });
+});
+
+describe("completion provider - color keys with literals", () => {
+  const labelsAt = (line: string) =>
+    setupCompletion(line)(0, line.length)?.items.map((i) => i.label) ?? [];
+
+  it("offers literal values ahead of named colors", () => {
+    const labels = labelsAt("bold-color = ");
+    expect(labels[0]).toBe("bright");
+    expect(labels).toContain("red");
+  });
+
+  it("offers only the enum for window-padding-color", () => {
+    expect(labelsAt("window-padding-color = ")).toEqual([
+      "background",
+      "extend",
+      "extend-always",
+    ]);
   });
 });

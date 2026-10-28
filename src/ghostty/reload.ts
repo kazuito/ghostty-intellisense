@@ -2,11 +2,13 @@ import { fetchGhosttyActionsAsync, ghosttyActions } from "./actions";
 import { fetchGhosttyDefaultsAsync, ghosttyDefaults } from "./defaults";
 import { fetchGhosttyFontsAsync, ghosttyFonts } from "./fonts";
 import { isGhosttyAvailableAsync } from "./ghostty";
+import { fetchGhosttyThemesAsync, ghosttyThemes } from "./themes";
 
 export function clearGhosttyData(): void {
   ghosttyDefaults.clear();
   ghosttyFonts.length = 0;
   ghosttyActions.length = 0;
+  ghosttyThemes.length = 0;
 }
 
 let latestReload = 0;
@@ -30,16 +32,18 @@ export async function reloadGhosttyData(
     return false;
   }
 
-  const [defaults, fonts, actions] = await Promise.all([
+  const [defaults, fonts, actions, themes] = await Promise.all([
     fetchGhosttyDefaultsAsync(executablePath),
     fetchGhosttyFontsAsync(executablePath),
     fetchGhosttyActionsAsync(executablePath),
+    fetchGhosttyThemesAsync(executablePath),
   ]);
   if (isLatest()) {
     clearGhosttyData();
     for (const [key, value] of defaults) ghosttyDefaults.set(key, value);
     ghosttyFonts.push(...fonts);
     ghosttyActions.push(...actions);
+    ghosttyThemes.push(...themes);
   }
   return true;
 }

@@ -46,6 +46,7 @@ suite("language", () => {
       "basic.ghostty": LANGUAGE_ID,
       "ghostty/config": LANGUAGE_ID,
       "com.mitchellh.ghostty/config": LANGUAGE_ID,
+      modeline: LANGUAGE_ID,
       "other/config": "plaintext",
     };
     for (const [file, language] of Object.entries(expected)) {
@@ -79,6 +80,75 @@ suite("language", () => {
         `${position.line}:${position.character}`,
       );
     }
+  });
+
+  test("hover documents the keybind action under the cursor", async () => {
+    const line = "keybind = super+shift+==equalize_splits";
+    const doc = await openDoc(line);
+    const action = await hoverText(
+      doc,
+      new vscode.Position(0, line.length - 2),
+    );
+    assert.ok(action.startsWith("**equalize_splits**"), action);
+    assert.ok(
+      action.includes(
+        "https://ghostty.org/docs/config/keybind/reference#equalize_splits",
+      ),
+      action,
+    );
+    const key = await hoverText(doc, new vscode.Position(0, 2));
+    assert.match(key, /\*\*keybind\*\*/);
+  });
+
+  test("shows color swatches for color values", async () => {
+    const doc = await openDoc(
+      "background = #282c34\nforeground = DodgerBlue\npalette = 1=f00\nbold-color = bright\nfont-size = 123\n",
+    );
+    const colors = await vscode.commands.executeCommand<
+      vscode.ColorInformation[]
+    >("vscode.executeDocumentColorProvider", doc.uri);
+    assert.deepStrictEqual(
+      colors.map((c) => [
+        rangeTuple(c.range),
+        [c.color.red, c.color.green, c.color.blue].map((v) =>
+          Math.round(v * 255),
+        ),
+      ]),
+      [
+        [
+          [0, 13, 0, 20],
+          [40, 44, 52],
+        ],
+        [
+          [1, 13, 1, 23],
+          [30, 144, 255],
+        ],
+        [
+          [2, 12, 2, 15],
+          [255, 0, 0],
+        ],
+      ],
+    );
+
+    const presentations = await vscode.commands.executeCommand<
+      vscode.ColorPresentation[]
+    >(
+      "vscode.executeColorPresentationProvider",
+      new vscode.Color(1, 0.5, 0, 1),
+      {
+        uri: doc.uri,
+        range: colors[0].range,
+      },
+    );
+    assert.deepStrictEqual(
+      presentations.map((p) => p.label),
+      ["#ff8000"],
+    );
+  });
+
+  test("registers the Open Config command", async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(commands.includes("ghostty.openConfig"));
   });
 
   test("hover marks an empty CLI default", async () => {

@@ -6,6 +6,7 @@ import {
   type ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
+import { registerOpenConfigCommand } from "./commands/openConfig";
 import {
   GHOSTTY_CONFIG_LANGUAGE_ID,
   GHOSTTY_LSP_ID,
@@ -49,7 +50,7 @@ export function activate(context: ExtensionContext) {
       vscode.commands.executeCommand("workbench.action.openSettings", query);
     },
   );
-  context.subscriptions.push(client);
+  context.subscriptions.push(client, registerOpenConfigCommand());
 }
 
 export function deactivate(): Thenable<void> | undefined {

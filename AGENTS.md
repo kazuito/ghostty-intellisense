@@ -7,8 +7,10 @@ files ending in `.ghostty`.
 
 ## Current Project State
 
-- Ships syntax highlighting plus six language-server features: hover,
-  completion, diagnostics, formatting, code actions, document symbols.
+- Ships syntax highlighting plus seven language-server features: hover,
+  completion, diagnostics, formatting, code actions, document symbols,
+  document colors. The client adds the `Ghostty: Open Config` command
+  (`src/commands/`).
 - The language server is organized as vertical feature slices.
   `src/server.ts` only wires providers together; each feature owns its
   LSP adapter and logic under `src/features/<feature>/`. Shared
@@ -50,11 +52,13 @@ multi-file features (diagnostics) keep split modules plus an
 ```text
 src/
 ├── extension.ts    # VSCode entry point; starts the language server
+├── commands/       # Client-side commands (Open Config)
 ├── server.ts       # LSP bootstrap; registers feature providers
 ├── features/       # hover, completion, codeActions, documentSymbols,
-│                   # diagnostics, formatter — each provider.ts + logic
-├── core/           # document.ts, schema.ts, constants.ts
-├── ghostty/        # CLI integration: defaults, fonts, actions, reload
+│                   # diagnostics, formatter, colors — each provider.ts + logic
+├── core/           # document.ts, schema.ts, keybind.ts, constants.ts
+├── ghostty/        # CLI integration: defaults, fonts, actions, themes,
+│                   # reload; configFiles (default config locations)
 └── generated/
     ├── config-keys.ts   # Generated config keys + descriptions (do not edit)
     └── colors.ts        # Generated X11 named colors (do not edit)
@@ -77,11 +81,20 @@ written to `out/`; never hand-edit files there.
 
 - **Hover** — looks up the key from the hovered line in
   `ghosttyConfigOptions`; returns description, default value, and a link to
-  `https://ghostty.org/docs/config/reference#<key>`.
+  `https://ghostty.org/docs/config/reference#<key>`. Over a `keybind`
+  action it returns that action's `+list-actions --docs` text instead.
 - **Completion** — before `=`, suggests keys (deduped unless in
-  `additiveKeys`); after `=`, suggests each key's `enum` values plus named
-  colors/installed fonts for `assets`-tagged keys; for comma-separated
-  values, only replaces the segment after the last comma.
+  `additiveKeys`) with markdown docs and a re-trigger so values follow;
+  after `=`, suggests each key's `enum` values plus named colors, installed
+  fonts, or themes (`+list-themes --plain`, with `light:`/`dark:`) for
+  `assets`-tagged keys; for comma-separated values, only replaces the
+  segment after the last comma. `keybind` splits trigger and action with
+  `findKeybindSeparator` (`src/core/keybind.ts`, a port of upstream
+  `Binding.zig`'s `Parser.init`) and suggests flags/modifiers before it,
+  actions after it.
+- **Document Colors** — swatches for hex (`#rgb`, `#rrggbb`, bare) and
+  case-insensitive X11 names on `color`-tagged keys and `palette` entries;
+  the picker writes hex in the replaced value's style.
 - **Diagnostics** — in-process validation flags duplicate non-additive
   keys (a renamed key counts as its new name) and deprecated keys/values
   (`Hint` + `DiagnosticTag.Deprecated`); unknown keys and invalid values come from
@@ -104,6 +117,9 @@ written to `out/`; never hand-edit files there.
   `Replace with ...` per replacement. Other `Hint` diagnostics are ignored.
 - **Document Symbols** — one `Property` symbol per non-comment, non-blank
   line, keyed on the config key; powers Outline/breadcrumbs.
+- **Open Config** (`src/commands/openConfig.ts`) — candidates come from
+  `ghosttyConfigFiles()`, which mirrors upstream `loadDefaultFiles` order
+  (XDG `config`, `config.ghostty`, then macOS Application Support).
 - **Shared Schema** (`src/core/schema.ts`) — builds
   `ghosttyConfigOptions: ConfigEntry[]` by merging generated keys with the
   `configMetadata` overlay; exports `additiveKeys` and `optionByKey`

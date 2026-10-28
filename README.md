@@ -13,15 +13,21 @@ files.
 
 - **Syntax highlighting** for keys, values, colors, keybinds, and comments
 - **Completions** — config keys as you type, and values after `=`: enum
-  options, named colors, installed font families, and keybind actions
+  options, named colors, installed font families, themes, and keybind
+  prefixes, modifiers, and actions
 - **Diagnostics** — duplicate keys, unknown keys, invalid values, and
   deprecated keys or values
 - **Quick fixes** — remove bad lines, fix typos, replace invalid values,
   migrate deprecated settings
 - **Hover documentation** — description, default value, and a link to the
-  official reference for the key under the cursor
+  official reference for the key under the cursor, or for the keybind
+  action under it
+- **Color swatches and picker** for hex and named colors, including
+  `palette` entries
 - **Formatter** — normalizes spacing, hex colors, booleans, and blank lines
 - **Outline and breadcrumbs** for quick navigation in large configs
+- **Ghostty: Open Config** command — opens the config file Ghostty loads,
+  or offers to create one where Ghostty would look for it
 
 ## Install
 
@@ -42,6 +48,7 @@ The extension activates on:
 - `**/ghostty/config`
 - `**/com.mitchellh.ghostty/config`
 - Any file with a `.ghostty` extension
+- Any file whose first line is a Vim modeline such as `# vim: ft=ghostty`
 
 ## Diagnostics and quick fixes
 
@@ -74,7 +81,9 @@ When the `ghostty` executable is available, the extension uses it to:
   details
 - suggest installed font family names when completing font settings
 - suggest keybind actions (from `ghostty +list-actions`) when completing
-  `keybind` values
+  `keybind` values, and show their documentation on hover
+- suggest bundled and your own themes (from `ghostty +list-themes`) when
+  completing `theme`, including `light:` / `dark:` pairs
 
 By default the extension searches the system `PATH` plus common per-platform
 install locations: on macOS, `/Applications/Ghostty.app/Contents/MacOS` and

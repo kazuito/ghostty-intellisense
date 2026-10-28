@@ -6,7 +6,7 @@ export type ConfigEntry = {
   key: string;
   desc: string;
   enum?: Array<string | number | boolean>;
-  assets?: Array<"color" | "font">;
+  assets?: Array<"color" | "font" | "theme">;
   comma?: boolean;
 };
 
@@ -142,7 +142,7 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
       ],
       comma: true,
     },
-    theme: { comma: true },
+    theme: { comma: true, assets: ["theme"] },
     background: { assets: ["color"] },
     foreground: { assets: ["color"] },
     "background-image-position": {
@@ -218,10 +218,7 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "window-padding-x": { comma: true },
     "window-padding-y": { comma: true },
     "window-padding-balance": { enum: [true, false, "equal"] },
-    "window-padding-color": {
-      enum: ["background", "extend", "extend-always"],
-      assets: ["color"],
-    },
+    "window-padding-color": { enum: ["background", "extend", "extend-always"] },
     "window-vsync": { enum: [true, false] },
     "window-inherit-working-directory": { enum: [true, false] },
     "tab-inherit-working-directory": { enum: [true, false] },

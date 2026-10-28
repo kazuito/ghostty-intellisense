@@ -20,7 +20,7 @@ export function registerHoverProvider(
       end: { line: params.position.line, character: Number.MAX_SAFE_INTEGER },
     });
 
-    const contents = getHoverContent(line);
+    const contents = getHoverContent(line, params.position.character);
     if (!contents) return null;
 
     return { contents };

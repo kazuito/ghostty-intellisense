@@ -87,6 +87,7 @@
         "extensions": [
           ".ghostty"
         ],
+        "firstLine": "^#\\s*vim?:.*\\b(?:ft|filetype)=ghostty\\b",
         "configuration": "./language-configuration.json"
       }
     ],
@@ -95,6 +96,13 @@
         "language": "ghostty-config",
         "scopeName": "source.ghostty",
         "path": "./syntaxes/ghostty-config.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "ghostty.openConfig",
+        "title": "Open Config",
+        "category": "Ghostty"
       }
     ],
     "configuration": {

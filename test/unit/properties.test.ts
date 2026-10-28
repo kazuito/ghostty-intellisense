@@ -3,6 +3,7 @@ import fc from "fast-check";
 import { parseDocument, parseLine, type Range } from "@/core/document";
 import { ghosttyConfigOptions } from "@/core/schema";
 import { getCodeActionSuggestions } from "@/features/codeActions/codeActions";
+import { getDocumentColors, parseColor } from "@/features/colors/colors";
 import { getCompletionSuggestions } from "@/features/completion/completion";
 import {
   buildUnparsedErrorsDiagnostic,
@@ -147,10 +148,30 @@ describe("language feature properties", () => {
     fc.assert(
       fc.property(document, (text) => {
         const lines = text.split("\n");
-        for (const l of lines) getHoverContent(l);
+        for (const l of lines) {
+          for (let character = 0; character <= l.length; character++) {
+            getHoverContent(l, character);
+          }
+        }
         for (const symbol of getDocumentSymbols(text)) {
           expectRangeInDocument(symbol.range, lines);
           expectRangeInDocument(symbol.selectionRange, lines);
+        }
+      }),
+    );
+  });
+
+  it("document colors slice back to a parseable color", () => {
+    fc.assert(
+      fc.property(document, (text) => {
+        const lines = text.split(/\r?\n/);
+        for (const { range, color } of getDocumentColors(text)) {
+          expect(range.start.line).toBe(range.end.line);
+          const token = lines[range.start.line].slice(
+            range.start.character,
+            range.end.character,
+          );
+          expect(parseColor(token)).toEqual(color);
         }
       }),
     );

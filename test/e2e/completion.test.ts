@@ -164,6 +164,35 @@ suite("completion", () => {
     ]);
   });
 
+  test("completes keybind actions after a literal `=` trigger", async () => {
+    const found = labels(await values("keybind = super+shift+==equalize_s"));
+    assert.deepStrictEqual(found, ["equalize_splits"]);
+  });
+
+  test("completes keybind prefixes and modifiers", async () => {
+    const found = labels(
+      await completionsAtEnd("keybind = ", vscode.CompletionItemKind.Keyword),
+    );
+    assert.deepStrictEqual(found.sort(), [
+      "all:",
+      "alt+",
+      "ctrl+",
+      "global:",
+      "performable:",
+      "shift+",
+      "super+",
+      "unconsumed:",
+    ]);
+  });
+
+  test("completes bundled themes from the CLI", async () => {
+    const found = labels(await values("theme = light:Catppuccin L"));
+    assert.ok(found.includes("Catppuccin Latte"), found.join(", "));
+    for (const label of found) {
+      assert.ok(label.toLowerCase().startsWith("catppuccin l"), label);
+    }
+  });
+
   test("falls back to built-in data without the CLI", async () => {
     try {
       await setSetting("executablePath", "/nonexistent/ghostty");
@@ -175,6 +204,7 @@ suite("completion", () => {
 
       assert.deepStrictEqual(await values("font-family = "), []);
       assert.deepStrictEqual(await values("keybind = cmd+t="), []);
+      assert.deepStrictEqual(await values("theme = "), []);
       assert.ok(labels(await values("background = re")).includes("red"));
       assert.ok(labels(await values("cursor-style = ")).includes("bar"));
     } finally {

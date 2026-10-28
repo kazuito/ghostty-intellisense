@@ -18,6 +18,7 @@ import { fetchGhosttyActionsAsync, ghosttyActions } from "@/ghostty/actions";
 import { fetchGhosttyDefaultsAsync, ghosttyDefaults } from "@/ghostty/defaults";
 import { fetchGhosttyFontsAsync, ghosttyFonts } from "@/ghostty/fonts";
 import { clearGhosttyData, reloadGhosttyData } from "@/ghostty/reload";
+import { fetchGhosttyThemesAsync, ghosttyThemes } from "@/ghostty/themes";
 
 afterEach(() => {
   clearGhosttyData();
@@ -55,14 +56,23 @@ describe("async fetchers", () => {
       { name: "new_tab", doc: "Open a new tab." },
     ]);
   });
+
+  it("parses themes, dropping the location and duplicates", async () => {
+    cliOutput.set(
+      "+list-themes --plain",
+      "Dracula (user)\nDracula (resources)\nGitHub Dark (resources)\n",
+    );
+    expect(await fetchGhosttyThemesAsync()).toEqual(["Dracula", "GitHub Dark"]);
+  });
 });
 
 describe("reloadGhosttyData", () => {
-  it("loads all three sources when available", async () => {
+  it("loads every source when available", async () => {
     cliOutput.set("--version", "Ghostty 1.2.0\n");
     cliOutput.set("+show-config --default", "font-size = 13\n");
     cliOutput.set("+list-fonts", "Fira Code\n");
     cliOutput.set("+list-actions --docs", "new_tab:\n  Open a new tab.\n");
+    cliOutput.set("+list-themes --plain", "Dracula (resources)\n");
 
     const available = await reloadGhosttyData("/bin/ghostty");
 
@@ -73,12 +83,14 @@ describe("reloadGhosttyData", () => {
     expect(ghosttyDefaults.get("font-size")).toBe("13");
     expect(ghosttyFonts).toEqual(["Fira Code"]);
     expect(ghosttyActions.map((action) => action.name)).toEqual(["new_tab"]);
+    expect(ghosttyThemes).toEqual(["Dracula"]);
   });
 
   it("clears cached data and skips loading when unavailable", async () => {
     ghosttyDefaults.set("stale", "value");
     ghosttyFonts.push("Stale Font");
     ghosttyActions.push({ name: "stale", doc: "" });
+    ghosttyThemes.push("Stale Theme");
 
     const available = await reloadGhosttyData();
 
@@ -87,6 +99,7 @@ describe("reloadGhosttyData", () => {
     expect(ghosttyDefaults.size).toBe(0);
     expect(ghosttyFonts).toEqual([]);
     expect(ghosttyActions).toEqual([]);
+    expect(ghosttyThemes).toEqual([]);
   });
 
   it("keeps the latest reload's data when an older one finishes later", async () => {
