@@ -4,6 +4,12 @@ All notable changes to the "ghostty" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.0.11] - 2026-10-29
+
+### Changed
+
+- New extension icon
+
 ## [1.0.10] - 2026-10-28
 
 ### Added

@@ -2,7 +2,7 @@
   "name": "ghostty",
   "displayName": "Ghostty IntelliSense",
   "description": "Language support, validation, formatting, quick fixes, and outlines for Ghostty config files.",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "publisher": "kazuito",
   "license": "MIT",
   "repository": {
