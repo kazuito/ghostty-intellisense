@@ -34,6 +34,8 @@ export const additiveKeys: ReadonlySet<string> = new Set<GhosttyConfigKey>([
   "font-variation-italic",
   "font-variation-bold-italic",
   "font-codepoint-map",
+  "clipboard-codepoint-map",
+  "key-remap",
   "env",
 ]);
 
@@ -74,6 +76,9 @@ export const deprecatedValues: Partial<
   "gtk-single-instance": {
     desktop: { replacements: ["detect"] },
   },
+  "gtk-tabs-location": {
+    hidden: { replacements: [], advice: "'window-show-tab-bar = never'" },
+  },
   "macos-dock-drop-behavior": {
     window: { replacements: ["new-window"] },
   },
@@ -102,10 +107,13 @@ export function deprecatedValue(
 export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
   {
     "font-family": { assets: ["font"] },
-    "font-style": { enum: [true, false] },
-    "font-style-bold": { enum: [true, false] },
-    "font-style-italic": { enum: [true, false] },
-    "font-style-bold-italic": { enum: [true, false] },
+    "font-family-bold": { assets: ["font"] },
+    "font-family-italic": { assets: ["font"] },
+    "font-family-bold-italic": { assets: ["font"] },
+    "font-style": { enum: ["default", false] },
+    "font-style-bold": { enum: ["default", false] },
+    "font-style-italic": { enum: ["default", false] },
+    "font-style-bold-italic": { enum: ["default", false] },
     "font-synthetic-style": {
       enum: [
         true,
@@ -122,7 +130,10 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "font-feature": { comma: true },
     "font-codepoint-map": { comma: true },
     "font-thicken": { enum: [true, false] },
-    "font-shaping-break": { enum: ["cursor", "no-cursor"], comma: true },
+    "font-shaping-break": {
+      enum: [true, false, "cursor", "no-cursor"],
+      comma: true,
+    },
     "alpha-blending": { enum: ["native", "linear", "linear-corrected"] },
     "grapheme-width-method": { enum: ["unicode", "legacy"] },
     "freetype-load-flags": {
@@ -161,16 +172,28 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     },
     "background-image-fit": { enum: ["contain", "cover", "stretch", "none"] },
     "background-image-repeat": { enum: [true, false] },
-    "selection-foreground": { assets: ["color"] },
-    "selection-background": { assets: ["color"] },
+    "selection-foreground": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
+    "selection-background": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
     "selection-clear-on-typing": { enum: [true, false] },
     "selection-clear-on-copy": { enum: [true, false] },
     "palette-generate": { enum: [true, false] },
     "palette-harmonious": { enum: [true, false] },
     "cursor-style": { enum: ["block", "bar", "underline", "block_hollow"] },
     "cursor-style-blink": { enum: [true, false] },
-    "cursor-color": { assets: ["color"] },
-    "cursor-text": { assets: ["color"] },
+    "cursor-color": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
+    "cursor-text": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
     "cursor-click-to-move": { enum: [true, false] },
     "mouse-hide-while-typing": { enum: [true, false] },
     "scroll-to-bottom": {
@@ -179,7 +202,11 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     },
     "mouse-shift-capture": { enum: [true, false, "always", "never"] },
     "mouse-reporting": { enum: [true, false] },
+    "mouse-scroll-multiplier": { comma: true },
     "background-opacity-cells": { enum: [true, false] },
+    "background-blur": {
+      enum: [true, false, "macos-glass-regular", "macos-glass-clear"],
+    },
     "unfocused-split-fill": { assets: ["color"] },
     "split-divider-color": { assets: ["color"] },
     "split-preserve-zoom": {
@@ -187,13 +214,25 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
       comma: true,
     },
     "drag-handle": { enum: ["auto", "always", "never"] },
-    "search-foreground": { assets: ["color"] },
-    "search-background": { assets: ["color"] },
-    "search-selected-foreground": { assets: ["color"] },
-    "search-selected-background": { assets: ["color"] },
+    "search-foreground": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
+    "search-background": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
+    "search-selected-foreground": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
+    "search-selected-background": {
+      enum: ["cell-foreground", "cell-background"],
+      assets: ["color"],
+    },
     "notify-on-command-finish": { enum: ["never", "unfocused", "always"] },
     "notify-on-command-finish-action": {
-      enum: ["bell", "no-bell", "notify", "no-notify"],
+      enum: [true, false, "bell", "no-bell", "notify", "no-notify"],
       comma: true,
     },
     "wait-after-command": { enum: [true, false] },
@@ -271,6 +310,7 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "quick-terminal-position": {
       enum: ["top", "bottom", "left", "right", "center"],
     },
+    "quick-terminal-size": { comma: true },
     "gtk-quick-terminal-layer": {
       enum: ["overlay", "top", "bottom", "background"],
     },
@@ -308,6 +348,8 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "vt-xt-checksum-report": { enum: [true, false] },
     "vt-xt-checksum-extension": {
       enum: [
+        true,
+        false,
         "negate",
         "no-negate",
         "attributes",
@@ -324,6 +366,8 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "custom-shader-animation": { enum: [true, false, "always"] },
     "bell-features": {
       enum: [
+        true,
+        false,
         "system",
         "no-system",
         "audio",

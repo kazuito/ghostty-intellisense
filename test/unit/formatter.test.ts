@@ -13,6 +13,7 @@ import {
   formatDocument,
   formatLine,
   formatPaletteValue,
+  formatValue,
   isHexColor,
 } from "@/features/formatter/formatter";
 import { registerFormatterProvider } from "@/features/formatter/provider";
@@ -194,6 +195,19 @@ describe("formatCommaSeparated", () => {
 });
 
 // ── formatPaletteValue ────────────────────────────────────────────────────────
+
+describe("formatValue - comma-separated keys", () => {
+  it.each([
+    ["quick-terminal-size", "50%,200px", "50%, 200px"],
+    [
+      "mouse-scroll-multiplier",
+      "precision:0.1,discrete:3",
+      "precision:0.1, discrete:3",
+    ],
+  ])("normalizes comma spacing for %s", (key, value, expected) =>
+    expect(formatValue(key, value, opts())).toBe(expected),
+  );
+});
 
 describe("formatPaletteValue", () => {
   it("formats the color portion after the inner '='", () =>

@@ -318,6 +318,13 @@ describe("code actions - deprecations", () => {
     });
   });
 
+  it("offers no same-key replacement when the fix moves to another key", () => {
+    const { getActions } = setupCodeActions("gtk-tabs-location = hidden");
+    expect(getActions(0, [makeHint(0, 20, 26, "deprecated-value")])).toEqual(
+      [],
+    );
+  });
+
   it("offers nothing once the line no longer holds the deprecated text", () => {
     const { getActions } = setupCodeActions("copy-on-select = both");
     expect(

@@ -316,6 +316,18 @@ describe("diagnostics provider - no diagnostics", () => {
     expect(await getDiagnostics()).toHaveLength(0);
   });
 
+  it("repeated key-remap and clipboard-codepoint-map produce no diagnostics", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      [
+        "key-remap = ctrl=super",
+        "key-remap = alt=ctrl",
+        "clipboard-codepoint-map = U+2500=U+002D",
+        "clipboard-codepoint-map = U+2502=U+007C",
+      ].join("\n"),
+    );
+    expect(await getDiagnostics()).toHaveLength(0);
+  });
+
   it("valid number within min/max range produces no diagnostics", async () => {
     const { getDiagnostics } = await setupDiagnostics(
       "font-thicken-strength = 128",
@@ -441,6 +453,19 @@ describe("diagnostics provider - deprecations", () => {
         27,
         "'macos-dock-drop-behavior = window' is deprecated; use 'new-window' instead",
       ],
+    ]);
+  });
+
+  it("points gtk-tabs-location = hidden at window-show-tab-bar", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      "gtk-tabs-location = hidden",
+    );
+    expect(
+      (await getDiagnostics())
+        .filter((d) => d.code === "deprecated-value")
+        .map((d) => d.message),
+    ).toEqual([
+      "'gtk-tabs-location = hidden' is deprecated; use 'window-show-tab-bar = never' instead",
     ]);
   });
 

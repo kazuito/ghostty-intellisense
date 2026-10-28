@@ -28,6 +28,22 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - `window-padding-color` completes `background`, `extend`, and
   `extend-always` instead of color names Ghostty rejects, and `bold-color`
   offers `bright` alongside colors
+- Repeating `key-remap` or `clipboard-codepoint-map` is no longer flagged as
+  a duplicate key
+- `font-style` and its bold/italic variants complete `default` and `false`
+  instead of `true`, which Ghostty reads as a style name
+- `font-family-bold`, `font-family-italic`, and `font-family-bold-italic`
+  complete installed fonts like `font-family`
+- Cursor, selection, and search colors offer `cell-foreground` and
+  `cell-background`; `background-blur` completes `true`, `false`, and the
+  `macos-glass-*` styles; `bell-features`, `font-shaping-break`,
+  `notify-on-command-finish-action`, and `vt-xt-checksum-extension` also
+  complete `true` and `false`
+- `gtk-tabs-location = hidden` is flagged as deprecated in favor of
+  `window-show-tab-bar = never`
+- The formatter normalizes comma spacing in `quick-terminal-size` and
+  `mouse-scroll-multiplier`, and completion after a comma there only
+  replaces the last segment
 
 ## [1.0.11] - 2026-10-29
 

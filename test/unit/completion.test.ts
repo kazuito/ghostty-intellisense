@@ -6,6 +6,7 @@ import {
 } from "vscode-languageserver/node";
 import { registerCompletionProvider } from "@/features/completion/provider";
 import { ghosttyActions } from "@/ghostty/actions";
+import { ghosttyFonts } from "@/ghostty/fonts";
 import { ghosttyThemes } from "@/ghostty/themes";
 import {
   createDocument,
@@ -254,6 +255,30 @@ describe("completion provider - value completions", () => {
         expected: ["visible", "hidden"],
         unexpected: ["macos-native"],
       },
+      {
+        input: "font-style = ",
+        cursor: 13,
+        expected: ["default", "false"],
+        unexpected: ["true"],
+      },
+      {
+        input: "bell-features = ",
+        cursor: 16,
+        expected: ["true", "false", "attention", "no-border"],
+        unexpected: [],
+      },
+      {
+        input: "background-blur = ",
+        cursor: 18,
+        expected: ["true", "false", "macos-glass-regular", "macos-glass-clear"],
+        unexpected: [],
+      },
+      {
+        input: "selection-background = cell-",
+        cursor: 28,
+        expected: ["cell-foreground", "cell-background"],
+        unexpected: ["red"],
+      },
     ] as const;
 
     for (const testCase of cases) {
@@ -421,6 +446,28 @@ describe("completion provider - keybind triggers", () => {
       newText: "shift+",
     });
     expect(items[0].command?.command).toBe("editor.action.triggerSuggest");
+  });
+});
+
+describe("completion provider - fonts", () => {
+  beforeEach(() => {
+    ghosttyFonts.push("JetBrains Mono", "Menlo");
+  });
+
+  afterEach(() => {
+    ghosttyFonts.length = 0;
+  });
+
+  it.each([
+    "font-family",
+    "font-family-bold",
+    "font-family-italic",
+    "font-family-bold-italic",
+  ])("offers installed fonts for %s", (key) => {
+    const line = `${key} = `;
+    expect(
+      setupCompletion(line)(0, line.length)?.items.map((i) => i.label),
+    ).toEqual(["JetBrains Mono", "Menlo"]);
   });
 });
 
