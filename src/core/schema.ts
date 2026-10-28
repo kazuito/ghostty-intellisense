@@ -71,6 +71,12 @@ export const deprecatedValues: Partial<
     },
     false: { replacements: ["none"] },
   },
+  "gtk-single-instance": {
+    desktop: { replacements: ["detect"] },
+  },
+  "macos-dock-drop-behavior": {
+    window: { replacements: ["new-window"] },
+  },
 };
 
 /** The current key `key` refers to, following renamed keys. */

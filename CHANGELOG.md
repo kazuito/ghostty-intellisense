@@ -18,8 +18,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   `copy-on-select` values (`none`, `primary`, `clipboard`, `both`)
 - Deprecated settings are flagged as struck-through hints with a quick fix:
   renamed keys (`scrollback-limit`, `background-blur-radius`,
-  `adw-toolbar-style`) and `copy-on-select = true`/`false`. Renamed keys keep
-  their highlighting and show the new key's documentation on hover
+  `adw-toolbar-style`), `copy-on-select = true`/`false`,
+  `gtk-single-instance = desktop`, and `macos-dock-drop-behavior = window`.
+  Renamed keys keep their highlighting and show the new key's documentation
+  on hover
 
 ### Fixed
 

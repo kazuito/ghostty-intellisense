@@ -422,6 +422,28 @@ describe("diagnostics provider - deprecations", () => {
     ).toBe(true);
   });
 
+  it("flags values Ghostty renamed in earlier releases", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      "gtk-single-instance = desktop\nmacos-dock-drop-behavior = window",
+    );
+    expect(
+      (await getDiagnostics())
+        .filter((d) => d.code === "deprecated-value")
+        .map((d) => [d.range.start.line, d.range.start.character, d.message]),
+    ).toEqual([
+      [
+        0,
+        22,
+        "'gtk-single-instance = desktop' is deprecated; use 'detect' instead",
+      ],
+      [
+        1,
+        27,
+        "'macos-dock-drop-behavior = window' is deprecated; use 'new-window' instead",
+      ],
+    ]);
+  });
+
   it("does not flag current values or values that only resemble deprecated ones", async () => {
     const { getDiagnostics } = await setupDiagnostics(
       [
