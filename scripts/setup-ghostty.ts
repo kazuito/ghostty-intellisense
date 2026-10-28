@@ -21,8 +21,8 @@ import {
 
 // Installs the pinned Ghostty.app under .vscode-test/ghostty/<version>/ so
 // tests never depend on whichever Ghostty the machine happens to have.
-// Linux uses the system package instead: the .deb needs GTK libraries that
-// only a real install pulls in.
+// Upstream ships no official Linux binaries, so elsewhere set GHOSTTY_BIN to
+// a build of the pinned version.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const installDir = ghosttyInstallDir(root);

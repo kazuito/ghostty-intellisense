@@ -13,9 +13,9 @@ concurrency:
 
 jobs:
   CI:
-    # Pinned: the Ghostty .deb in test/ghostty-pin.json is built per Ubuntu
-    # release.
-    runs-on: ubuntu-24.04
+    # macOS: Ghostty publishes official binaries only for macOS, and
+    # test/ghostty-pin.json pins that DMG.
+    runs-on: macos-15
     timeout-minutes: 20
 
     steps:
@@ -37,16 +37,10 @@ jobs:
         run: bun run bundle
 
       - name: Install Ghostty
-        run: |
-          deb="$RUNNER_TEMP/ghostty.deb"
-          curl -fsSLo "$deb" "$(jq -r .linux.url test/ghostty-pin.json)"
-          echo "$(jq -r .linux.sha256 test/ghostty-pin.json)  $deb" | sha256sum -c -
-          sudo apt-get update -qq
-          sudo apt-get install -y "$deb"
-          ghostty --version
+        run: bun run setup:ghostty
 
       - name: Test
         run: bun run test
 
       - name: E2E
-        run: xvfb-run -a bun run test:e2e
+        run: bun run test:e2e

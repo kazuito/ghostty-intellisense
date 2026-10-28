@@ -147,14 +147,15 @@ bun run setup:ghostty # Install the pinned Ghostty (macOS); no-op when current
   another version. The binary is `GHOSTTY_BIN` if set; otherwise on macOS
   it is `.vscode-test/ghostty/<version>/Ghostty.app`, which
   `scripts/setup-ghostty.ts` downloads (one-time ~34 MB), sha256-checks,
-  and installs atomically, pruning other versions; on Linux it is
-  `ghostty` on PATH, which `ci.yml` installs from the pinned `.deb` (a
-  local Linux setup needs that `.deb` installed or `GHOSTTY_BIN`).
+  and installs atomically, pruning other versions; elsewhere it is
+  `ghostty` on PATH. Upstream ships official binaries only for macOS, so
+  `ci.yml` runs on a macOS runner; a local Linux setup needs `GHOSTTY_BIN`
+  (or PATH) pointing at a build of the pinned version.
   `/Applications/Ghostty.app` is never used, so its auto-updates can't
   change test results. Upstream publishes no DMG checksum; its `sha256`
   was computed at pin time (verify it against the Sparkle `edSignature` in
   `https://release.files.ghostty.org/appcast.xml`). To bump: update all
-  fields in the pin file (the `.deb` digest is on its GitHub release), run
+  fields in the pin file, run
   `bun run gen:config`, diff upstream's `compatibility` table and enum types
   against `renamedKeys`/`deprecatedValues`/`configMetadata`, then revisit
   `newerThanInstalled`.
@@ -181,8 +182,7 @@ bun run setup:ghostty # Install the pinned Ghostty (macOS); no-op when current
   so the server's data provably comes from it. Version-dependent output (messages, action docs) may
   be hardcoded; don't assert machine-dependent data (installed fonts,
   platform-specific defaults like `font-size`). Runs against both
-  VS Code `stable` and the `engines.vscode` minimum (`1.91.0`); CI runs it
-  under `xvfb-run`. `@vscode/test-electron` always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
+  VS Code `stable` and the `engines.vscode` minimum (`1.91.0`). `@vscode/test-electron` always disables Workspace Trust, so `test/unit/manifest.test.ts` guards
   the `restrictedConfigurations` declaration and `ghostty.format.*` /
   `DEFAULT_FORMATTER_OPTIONS` parity instead.
 

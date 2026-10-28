@@ -15,8 +15,7 @@ export function ghosttyBinIn(installDir: string): string {
 
 /**
  * `GHOSTTY_BIN` wins. Otherwise macOS uses the copy
- * `scripts/setup-ghostty.ts` installs, and Linux the system package CI
- * installs from the pinned `.deb`.
+ * `scripts/setup-ghostty.ts` installs, and other platforms `ghostty` on PATH.
  */
 export function pinnedGhosttyBin(root: string): string {
   if (process.env.GHOSTTY_BIN) return process.env.GHOSTTY_BIN;
