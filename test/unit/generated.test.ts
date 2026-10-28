@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { additiveKeys, configMetadata, optionByKey } from "@/core/schema";
+import {
+  additiveKeys,
+  configMetadata,
+  optionByKey,
+  renamedKeys,
+} from "@/core/schema";
 import { configKeys } from "@/generated/config-keys";
 
 const grammar = JSON.parse(
@@ -21,9 +26,9 @@ function grammarKeys(): string[] {
 }
 
 describe("generated config keys vs grammar", () => {
-  it("grammar key alternation matches the generated key set", () => {
+  it("grammar key alternation matches the generated and renamed keys", () => {
     expect(new Set(grammarKeys())).toEqual(
-      new Set(configKeys.map((k) => k.key)),
+      new Set([...configKeys.map((k) => k.key), ...renamedKeys.keys()]),
     );
   });
 });
@@ -39,6 +44,13 @@ describe("hand-curated overlay stays in sync with generated keys", () => {
   it("every additive key exists in the config", () => {
     for (const key of additiveKeys) {
       expect(optionByKey.has(key)).toBe(true);
+    }
+  });
+
+  it("renamed keys point at current keys and are no longer generated", () => {
+    for (const [oldKey, newKey] of renamedKeys) {
+      expect(optionByKey.has(newKey)).toBe(true);
+      expect(optionByKey.has(oldKey)).toBe(false);
     }
   });
 });

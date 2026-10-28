@@ -38,6 +38,56 @@ export const additiveKeys: ReadonlySet<string> = new Set<GhosttyConfigKey>([
 ]);
 
 /**
+ * Old key names Ghostty still accepts through `cli.compatibilityRenamed` in
+ * upstream `Config.zig`, mapped to the key they now set.
+ */
+export const renamedKeys: ReadonlyMap<string, GhosttyConfigKey> = new Map<
+  string,
+  GhosttyConfigKey
+>([
+  ["background-blur-radius", "background-blur"],
+  ["adw-toolbar-style", "gtk-toolbar-style"],
+  ["scrollback-limit", "scrollback-limit-bytes"],
+]);
+
+export type DeprecatedValue = {
+  /** Values to offer as quick-fix replacements, most common first. */
+  replacements: readonly string[];
+  /** Overrides the "use ... instead" wording when the choice needs context. */
+  advice?: string;
+};
+
+/**
+ * Values Ghostty still accepts through a compatibility handler in upstream
+ * `Config.zig` but has deprecated, keyed by config key and exact value.
+ */
+export const deprecatedValues: Partial<
+  Record<GhosttyConfigKey, Readonly<Record<string, DeprecatedValue>>>
+> = {
+  "copy-on-select": {
+    true: {
+      replacements: ["primary", "clipboard"],
+      advice: "'primary' on Linux and FreeBSD, or 'clipboard' on macOS",
+    },
+    false: { replacements: ["none"] },
+  },
+};
+
+/** The current key `key` refers to, following renamed keys. */
+export function canonicalKey(key: string): string {
+  return renamedKeys.get(key) ?? key;
+}
+
+/** The deprecation entry for `key = value`, if Ghostty deprecated that value. */
+export function deprecatedValue(
+  key: string,
+  value: string,
+): DeprecatedValue | undefined {
+  const values = deprecatedValues[key as GhosttyConfigKey];
+  return values && Object.hasOwn(values, value) ? values[value] : undefined;
+}
+
+/**
  * Hand-curated per-key metadata the upstream MDX does not expose
  * machine-readably: value enums, color/font asset hints, and comma-separated
  * value semantics. `desc` is an optional override for the generated description.
@@ -92,6 +142,7 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "background-image-position": {
       enum: [
         "center",
+        "center-center",
         "center-right",
         "center-left",
         "top-center",
@@ -125,7 +176,11 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "background-opacity-cells": { enum: [true, false] },
     "unfocused-split-fill": { assets: ["color"] },
     "split-divider-color": { assets: ["color"] },
-    "split-preserve-zoom": { enum: [true, false] },
+    "split-preserve-zoom": {
+      enum: [true, false, "navigation", "no-navigation"],
+      comma: true,
+    },
+    "drag-handle": { enum: ["auto", "always", "never"] },
     "search-foreground": { assets: ["color"] },
     "search-background": { assets: ["color"] },
     "search-selected-foreground": { assets: ["color"] },
@@ -136,15 +191,27 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
       comma: true,
     },
     "wait-after-command": { enum: [true, false] },
+    "scrollback-limit-bytes": { enum: ["unlimited"] },
+    "scrollback-limit-lines": { enum: ["unlimited"] },
+    "scrollback-compression": { enum: [true, false] },
     scrollbar: { enum: ["system", "never"] },
     "link-url": { enum: [true, false] },
-    "link-previews": { enum: [true, false] },
+    "link-osc8": { enum: [true, false] },
+    "link-previews": { enum: [true, false, "osc8"] },
     maximize: { enum: [true, false] },
-    fullscreen: { enum: [true, false] },
+    fullscreen: {
+      enum: [
+        true,
+        false,
+        "non-native",
+        "non-native-visible-menu",
+        "non-native-padded-notch",
+      ],
+    },
     "working-directory": { enum: ["home", "inherit"] },
     "window-padding-x": { comma: true },
     "window-padding-y": { comma: true },
-    "window-padding-balance": { enum: [true, false] },
+    "window-padding-balance": { enum: [true, false, "equal"] },
     "window-padding-color": {
       enum: ["background", "extend", "extend-always"],
       assets: ["color"],
@@ -182,13 +249,17 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "focus-follows-mouse": { enum: [true, false] },
     "clipboard-read": { enum: ["ask", "allow", "deny"] },
     "clipboard-write": { enum: ["ask", "allow", "deny"] },
+    "clipboard-write-limit-bytes": { enum: ["unlimited"] },
     "clipboard-trim-trailing-spaces": { enum: [true, false] },
     "clipboard-paste-protection": { enum: [true, false] },
     "clipboard-paste-bracketed-safe": { enum: [true, false] },
     "title-report": { enum: [true, false] },
-    "copy-on-select": { enum: [true, false, "clipboard"] },
+    "copy-on-select": { enum: ["none", "primary", "clipboard", "both"] },
     "right-click-action": {
       enum: ["context-menu", "paste", "copy", "copy-or-paste", "ignore"],
+    },
+    "middle-click-action": {
+      enum: ["primary-paste", "clipboard-paste", "ignore"],
     },
     "config-default-files": { enum: [true, false] },
     "confirm-close-surface": { enum: [true, false, "always"] },
@@ -230,6 +301,23 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     },
     "osc-color-report-format": { enum: ["none", "8-bit", "16-bit"] },
     "vt-kam-allowed": { enum: [true, false] },
+    "vt-window-resize-allowed": { enum: [true, false] },
+    "vt-xt-checksum-report": { enum: [true, false] },
+    "vt-xt-checksum-extension": {
+      enum: [
+        "negate",
+        "no-negate",
+        "attributes",
+        "no-attributes",
+        "trim",
+        "no-trim",
+        "undrawn",
+        "no-undrawn",
+        "full",
+        "no-full",
+      ],
+      comma: true,
+    },
     "custom-shader-animation": { enum: [true, false, "always"] },
     "bell-features": {
       enum: [
@@ -257,8 +345,10 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
       ],
       comma: true,
     },
-    "macos-non-native-fullscreen": { enum: [true, false, "visible-menu"] },
-    "macos-window-buttons": { enum: ["visible", "hidden", "macos-native"] },
+    "macos-non-native-fullscreen": {
+      enum: [true, false, "visible-menu", "padded-notch"],
+    },
+    "macos-window-buttons": { enum: ["visible", "hidden"] },
     "macos-titlebar-style": {
       enum: ["native", "transparent", "tabs", "hidden"],
     },
@@ -275,7 +365,12 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
         "official",
         "blueprint",
         "chalkboard",
+        "microchip",
+        "glass",
+        "holographic",
+        "paper",
         "retro",
+        "xray",
         "custom",
         "custom-style",
       ],
@@ -294,18 +389,10 @@ export const configMetadata: Partial<Record<GhosttyConfigKey, ConfigMetadata>> =
     "gtk-toolbar-style": { enum: ["raised", "raised-border", "flat"] },
     "gtk-titlebar-style": { enum: ["native", "tabs"] },
     "gtk-wide-tabs": { enum: [true, false] },
+    "gtk-tabs-inverted": { enum: [true, false] },
+    "gtk-horizontal-tab-scroll": { enum: [true, false] },
     "desktop-notifications": { enum: [true, false] },
-    "progress-style": {
-      enum: [
-        "floating",
-        "no-floating",
-        "hidden",
-        "no-hidden",
-        "dock",
-        "no-dock",
-      ],
-      comma: true,
-    },
+    "progress-style": { enum: [true, false] },
     "bold-color": { enum: ["bright"], assets: ["color"] },
     "async-backend": { enum: ["auto", "epoll", "io_uring"] },
     "auto-update": { enum: ["off", "check", "download"] },

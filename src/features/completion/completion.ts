@@ -3,7 +3,12 @@ import {
   CONFIG_KEY_VALUE_SEPARATOR,
 } from "@/core/constants";
 import { parseDocument } from "@/core/document";
-import { additiveKeys, ghosttyConfigOptions, optionByKey } from "@/core/schema";
+import {
+  additiveKeys,
+  canonicalKey,
+  ghosttyConfigOptions,
+  optionByKey,
+} from "@/core/schema";
 import { ghosttyActions } from "@/ghostty/actions";
 import { ghosttyColors } from "@/ghostty/colors";
 import { ghosttyDefaults } from "@/ghostty/defaults";
@@ -28,7 +33,7 @@ export function getCompletionSuggestions(
   const eqIndex = lineUpToCursor.indexOf(CONFIG_KEY_VALUE_SEPARATOR);
 
   if (eqIndex >= 0) {
-    const key = lineUpToCursor.slice(0, eqIndex).trim();
+    const key = canonicalKey(lineUpToCursor.slice(0, eqIndex).trim());
     const option = optionByKey.get(key);
     if (!option) return null;
 
@@ -100,7 +105,7 @@ export function getCompletionSuggestions(
 
   const usedKeys = new Set(
     parseDocument(documentText).flatMap((line) =>
-      "key" in line ? [line.key] : [],
+      "key" in line ? [canonicalKey(line.key)] : [],
     ),
   );
 

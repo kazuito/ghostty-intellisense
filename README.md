@@ -14,8 +14,10 @@ files.
 - **Syntax highlighting** for keys, values, colors, keybinds, and comments
 - **Completions** — config keys as you type, and values after `=`: enum
   options, named colors, installed font families, and keybind actions
-- **Diagnostics** — duplicate keys, unknown keys, and invalid values
-- **Quick fixes** — remove bad lines, fix typos, replace invalid values
+- **Diagnostics** — duplicate keys, unknown keys, invalid values, and
+  deprecated keys or values
+- **Quick fixes** — remove bad lines, fix typos, replace invalid values,
+  migrate deprecated settings
 - **Hover documentation** — description, default value, and a link to the
   official reference for the key under the cursor
 - **Formatter** — normalizes spacing, hex colors, booleans, and blank lines
@@ -44,7 +46,10 @@ The extension activates on:
 ## Diagnostics and quick fixes
 
 Duplicate keys (for settings that may only appear once) are flagged as you
-type, with no setup required.
+type, with no setup required. So are settings Ghostty still accepts but has
+deprecated, such as the old `scrollback-limit` name (now
+`scrollback-limit-bytes`) or `copy-on-select = true`; these show struck
+through as hints rather than errors.
 
 When the Ghostty CLI is available, the extension also runs
 `ghostty +validate-config` on your file to report exactly what Ghostty
@@ -58,6 +63,7 @@ Diagnostics with an obvious fix get quick actions:
 - `Remove line` for unknown or duplicate entries
 - `Did you mean ...?` suggestions for mistyped keys
 - `Replace with ...` suggestions for invalid boolean, enum, or literal values
+- `Rename to ...` and `Replace with ...` to migrate deprecated keys and values
 
 ## Ghostty CLI integration
 

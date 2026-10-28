@@ -1,6 +1,6 @@
 import { CONFIG_KEY_VALUE_SEPARATOR } from "@/core/constants";
 import { type ParsedLine, parseLine } from "@/core/document";
-import { optionByKey } from "@/core/schema";
+import { canonicalKey, optionByKey } from "@/core/schema";
 
 export interface FormatterOptions {
   /** Spacing around "=". "space" → `key = value`; "no-space" → `key=value`; "preserve" → leave as-is. */
@@ -101,7 +101,7 @@ export function formatValue(
 
   if (key === "palette") return formatPaletteValue(value, opts);
 
-  const option = optionByKey.get(key);
+  const option = optionByKey.get(canonicalKey(key));
   if (!option) return value;
 
   const formatToken = option.assets?.includes("color")

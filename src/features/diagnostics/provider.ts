@@ -3,6 +3,7 @@ import {
   type Connection,
   Diagnostic,
   DiagnosticSeverity,
+  DiagnosticTag,
   type TextDocuments,
 } from "vscode-languageserver/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
@@ -34,16 +35,20 @@ function toLspSeverity(
       return DiagnosticSeverity.Information;
     case "error":
       return DiagnosticSeverity.Error;
+    case "hint":
+      return DiagnosticSeverity.Hint;
   }
 }
 
 function toLspDiagnostic(diagnostic: ValidationDiagnostic): Diagnostic {
-  return Diagnostic.create(
+  const lspDiagnostic = Diagnostic.create(
     diagnostic.range,
     diagnostic.message,
     toLspSeverity(diagnostic.severity),
     diagnostic.code,
   );
+  if (diagnostic.deprecated) lspDiagnostic.tags = [DiagnosticTag.Deprecated];
+  return lspDiagnostic;
 }
 
 async function validateDocumentAsync(

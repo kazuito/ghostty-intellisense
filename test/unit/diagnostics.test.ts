@@ -12,6 +12,7 @@ import * as fsPromises from "node:fs/promises";
 import {
   type Diagnostic,
   DiagnosticSeverity,
+  DiagnosticTag,
 } from "vscode-languageserver/node";
 
 const execFile = mock<(...args: unknown[]) => unknown>();
@@ -359,6 +360,80 @@ describe("diagnostics provider - duplicate key", () => {
       (d) => d.severity === DiagnosticSeverity.Information,
     );
     expect(info?.range.start.line).toBe(1);
+  });
+
+  it("treats a renamed key and its new name as the same key", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      "scrollback-limit = 1000\nscrollback-limit-bytes = 2000",
+    );
+    const dup = (await getDiagnostics()).find(
+      (d) => d.code === "duplicate-key",
+    );
+    expect(dup?.range.start.line).toBe(1);
+    expect(dup?.message).toBe(
+      "Duplicate key 'scrollback-limit-bytes' (first defined on line 1 as 'scrollback-limit')",
+    );
+  });
+});
+
+describe("diagnostics provider - deprecations", () => {
+  it("flags a renamed key as a deprecated hint on the key", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      "scrollback-limit = 1000",
+    );
+    expect(await getDiagnostics()).toEqual([
+      {
+        range: {
+          start: { line: 0, character: 0 },
+          end: { line: 0, character: "scrollback-limit".length },
+        },
+        message:
+          "'scrollback-limit' is deprecated; use 'scrollback-limit-bytes' instead",
+        severity: DiagnosticSeverity.Hint,
+        code: "deprecated-key",
+        tags: [DiagnosticTag.Deprecated],
+      },
+    ]);
+  });
+
+  it("flags deprecated copy-on-select values on the value", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      "copy-on-select = true\ncopy-on-select = false",
+    );
+    const deprecated = (await getDiagnostics()).filter(
+      (d) => d.code === "deprecated-value",
+    );
+    expect(
+      deprecated.map((d) => [
+        d.range.start.line,
+        d.range.start.character,
+        d.message,
+      ]),
+    ).toEqual([
+      [
+        0,
+        17,
+        "'copy-on-select = true' is deprecated; use 'primary' on Linux and FreeBSD, or 'clipboard' on macOS instead",
+      ],
+      [1, 17, "'copy-on-select = false' is deprecated; use 'none' instead"],
+    ]);
+    expect(
+      deprecated.every((d) => d.severity === DiagnosticSeverity.Hint),
+    ).toBe(true);
+  });
+
+  it("does not flag current values or values that only resemble deprecated ones", async () => {
+    const { getDiagnostics } = await setupDiagnostics(
+      [
+        "copy-on-select = both",
+        "copy-on-select = TRUE",
+        "copy-on-select = constructor",
+        "font-thicken = true",
+      ].join("\n"),
+    );
+    const codes = (await getDiagnostics()).map((d) => d.code);
+    expect(codes).not.toContain("deprecated-value");
+    expect(codes).not.toContain("deprecated-key");
   });
 });
 

@@ -267,3 +267,64 @@ describe("code actions - 'Remove line' edit", () => {
     expect(edits[0]?.range.end.character).toBe(content.length);
   });
 });
+
+function makeHint(
+  line: number,
+  charStart: number,
+  charEnd: number,
+  code: string,
+): Diagnostic {
+  return {
+    range: {
+      start: { line, character: charStart },
+      end: { line, character: charEnd },
+    },
+    message: "deprecated",
+    severity: DiagnosticSeverity.Hint,
+    code,
+  };
+}
+
+describe("code actions - deprecations", () => {
+  it("renames a deprecated key in place", () => {
+    const content = "  scrollback-limit = 1000";
+    const { getActions } = setupCodeActions(content);
+    const actions = getActions(0, [makeHint(0, 2, 18, "deprecated-key")]);
+    expect(actions.map((a) => a.title)).toEqual([
+      "Rename to 'scrollback-limit-bytes'",
+    ]);
+    expect(getActionEdits(actions[0])).toEqual([
+      {
+        range: {
+          start: { line: 0, character: 2 },
+          end: { line: 0, character: 18 },
+        },
+        newText: "scrollback-limit-bytes",
+      },
+    ]);
+  });
+
+  it("offers each replacement for a deprecated value", () => {
+    const content = "copy-on-select = true ";
+    const { getActions } = setupCodeActions(content);
+    const actions = getActions(0, [makeHint(0, 17, 21, "deprecated-value")]);
+    expect(actions.map((a) => a.title)).toEqual([
+      "Replace with 'primary'",
+      "Replace with 'clipboard'",
+    ]);
+    expect(getActionEdits(actions[1])[0]?.range).toEqual({
+      start: { line: 0, character: 17 },
+      end: { line: 0, character: 21 },
+    });
+  });
+
+  it("offers nothing once the line no longer holds the deprecated text", () => {
+    const { getActions } = setupCodeActions("copy-on-select = both");
+    expect(
+      getActions(0, [
+        makeHint(0, 17, 21, "deprecated-value"),
+        makeHint(0, 0, 14, "deprecated-key"),
+      ]),
+    ).toEqual([]);
+  });
+});

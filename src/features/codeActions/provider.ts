@@ -20,6 +20,8 @@ function toLibSeverity(
       return "information";
     case DiagnosticSeverity.Error:
       return "error";
+    case DiagnosticSeverity.Hint:
+      return "hint";
     default:
       return null;
   }

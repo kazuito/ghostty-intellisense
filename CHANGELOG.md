@@ -4,6 +4,34 @@ All notable changes to the "ghostty" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Added
+
+- Ghostty 1.4 support: completions, hover, and highlighting for the new
+  `scrollback-limit-bytes`, `scrollback-limit-lines`, `scrollback-compression`,
+  `link-osc8`, `drag-handle`, `clipboard-write-limit-bytes`,
+  `middle-click-action`, `vt-window-resize-allowed`, `vt-xt-checksum-report`,
+  `vt-xt-checksum-extension`, `gtk-tabs-inverted`, and
+  `gtk-horizontal-tab-scroll` options, `unlimited` for the scrollback and
+  clipboard limits, `equal` for `window-padding-balance`, and the reworked
+  `copy-on-select` values (`none`, `primary`, `clipboard`, `both`)
+- Deprecated settings are flagged as struck-through hints with a quick fix:
+  renamed keys (`scrollback-limit`, `background-blur-radius`,
+  `adw-toolbar-style`) and `copy-on-select = true`/`false`. Renamed keys keep
+  their highlighting and show the new key's documentation on hover
+
+### Fixed
+
+- Completions now offer `center-center` for `background-image-position`,
+  `osc8` for `link-previews`, the non-native modes for `fullscreen`,
+  `padded-notch` for `macos-non-native-fullscreen`, the `microchip`, `glass`,
+  `holographic`, `paper`, and `xray` app icons, and `navigation` for
+  `split-preserve-zoom`
+- `macos-window-buttons` no longer offers `macos-native`, and
+  `progress-style` offers `true`/`false` instead of style flags; Ghostty
+  accepts neither of the removed values
+
 ## [1.0.9] - 2026-10-27
 
 ### Fixed

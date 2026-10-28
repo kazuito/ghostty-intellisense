@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
-import { configMetadata } from "@/core/schema";
+import { configMetadata, deprecatedValues, renamedKeys } from "@/core/schema";
 import {
   createValidationTempPath,
   parseGhosttyOutput,
@@ -95,13 +95,7 @@ describe.skipIf(!available)("real ghostty CLI", () => {
   // Overlay values the installed Ghostty rejects, pending confirmation that
   // they exist upstream (keep) or are stale (remove from configMetadata).
   // Revisit this list when bumping test/ghostty-pin.json.
-  const newerThanInstalled = new Set([
-    "macos-window-buttons = macos-native",
-    ...["floating", "hidden", "dock"].flatMap((v) => [
-      `progress-style = ${v}`,
-      `progress-style = no-${v}`,
-    ]),
-  ]);
+  const newerThanInstalled = new Set<string>();
 
   it("accepts every enum value in the hand-curated overlay", async () => {
     const lines = Object.entries(configMetadata)
@@ -114,5 +108,27 @@ describe.skipIf(!available)("real ghostty CLI", () => {
       .filter((d) => d.code === "invalid-value")
       .map((d) => lines[d.range.start.line]);
     expect(rejected).toEqual([]);
+  });
+
+  // A valid value for each old key, so the line exercises the rename itself.
+  const renamedKeySamples: Record<string, string> = {
+    "background-blur-radius": "20",
+    "adw-toolbar-style": "flat",
+    "scrollback-limit": "1000",
+  };
+
+  it("still accepts every renamed key and deprecated value", async () => {
+    expect(Object.keys(renamedKeySamples).sort()).toEqual(
+      [...renamedKeys.keys()].sort(),
+    );
+    const lines = [
+      ...Object.entries(renamedKeySamples).map(([k, v]) => `${k} = ${v}`),
+      ...Object.entries(deprecatedValues).flatMap(([key, values]) =>
+        Object.keys(values ?? {}).map((value) => `${key} = ${value}`),
+      ),
+    ];
+    const { reportedErrors, diagnostics } = await validate(lines.join("\n"));
+    expect(diagnostics.map((d) => lines[d.range.start.line])).toEqual([]);
+    expect(reportedErrors).toBe(false);
   });
 });

@@ -19,15 +19,19 @@ files ending in `.ghostty`.
 - The server shells out to the Ghostty CLI (`ghostty.executablePath`) at
   startup and during validation to load defaults, installed fonts, and CLI
   diagnostics.
-- Config **key list and descriptions** are generated from Ghostty's
-  upstream docs into `src/generated/config-keys.ts` by
-  `scripts/gen-config.ts` (run `bun run gen:config`). Committed; the build
-  never touches the network.
+- Config **key list and descriptions** are generated from
+  `src/config/Config.zig` at the Ghostty release pinned in
+  `test/ghostty-pin.json` into `src/generated/config-keys.ts` by
+  `scripts/gen-config.ts` (run `bun run gen:config`). The script ports
+  upstream's helpgen + webgen, so its output matches the website's
+  `reference.mdx` without waiting for the website to sync a release.
+  Committed; the build never touches the network.
 - `src/core/schema.ts` merges the generated list with a hand-curated
   overlay (`configMetadata`) for metadata the docs don't expose
   machine-readably: per-key value enums, color/font asset hints,
   comma-separated semantics, the `additiveKeys` set, and description
-  overrides.
+  overrides. It also mirrors upstream's compatibility table: `renamedKeys`
+  (`cli.compatibilityRenamed` entries) and `deprecatedValues`.
 - Keep `README.md`, `CHANGELOG.md`, and `package.json` aligned with the
   actual shipped feature set.
 
@@ -72,8 +76,9 @@ written to `out/`; never hand-edit files there.
   `additiveKeys`); after `=`, suggests each key's `enum` values plus named
   colors/installed fonts for `assets`-tagged keys; for comma-separated
   values, only replaces the segment after the last comma.
-- **Diagnostics** — in-process validation only flags duplicate
-  non-additive keys; unknown keys and invalid values come from
+- **Diagnostics** — in-process validation flags duplicate non-additive
+  keys (a renamed key counts as its new name) and deprecated keys/values
+  (`Hint` + `DiagnosticTag.Deprecated`); unknown keys and invalid values come from
   `ghostty +validate-config`, run async. That CLI emits two output formats
   (`file:line:field: msg` vs. unlocated `field: msg` once a theme/secondary
   config loads); `parseGhosttyOutput` handles both, skipping located lines
@@ -88,13 +93,16 @@ written to `out/`; never hand-edit files there.
 - **Code Actions** — quick fixes derived from diagnostics: unknown keys get
   `Remove line` plus up to three Levenshtein-based `Did you mean ...?`
   suggestions; duplicate non-additive keys get `Remove line`; invalid
-  enum/literal/boolean values get up to five `Replace with ...` suggestions.
+  enum/literal/boolean values get up to five `Replace with ...` suggestions;
+  deprecated keys get `Rename to ...` and deprecated values one
+  `Replace with ...` per replacement. Other `Hint` diagnostics are ignored.
 - **Document Symbols** — one `Property` symbol per non-comment, non-blank
   line, keyed on the config key; powers Outline/breadcrumbs.
 - **Shared Schema** (`src/core/schema.ts`) — builds
   `ghosttyConfigOptions: ConfigEntry[]` by merging generated keys with the
   `configMetadata` overlay; exports `additiveKeys` and `optionByKey`
-  (key lookup; use `.has()` for validity and `.get(key)?.comma`).
+  (key lookup; use `.has()` for validity and `.get(key)?.comma`). Look up
+  user-typed keys through `canonicalKey()` so renamed keys resolve.
 
 ## Syntax Highlighting
 
@@ -103,19 +111,19 @@ written to `out/`; never hand-edit files there.
 (line comments, bracket pairs, auto-closing), and `ghostty.format.*`
 settings.
 
-The key alternation and enum-value alternation in the grammar are
-**generated** by `scripts/gen-config.ts` — run `bun run gen:config` after key
+The key alternation (generated keys plus `renamedKeys`) and enum-value
+alternation in the grammar are **generated** by `scripts/gen-config.ts` — run `bun run gen:config` after key
 or enum changes rather than hand-editing those regexes. Other token
 patterns (strings, numbers, colors, paths) are hand-maintained.
 Scope assertions for those live in `test/grammar/grammar.test.ghostty`
 (`vscode-tmgrammar-test` syntax); extend it when touching token patterns. A
 drift check (`test/unit/generated.test.ts`) asserts the grammar key set
-matches the generated key set.
+matches the generated and renamed key set.
 
 ## Build And Verification
 
 ```bash
-bun run gen:config # Regenerate config keys/descriptions + grammar from upstream MDX
+bun run gen:config # Regenerate config keys/descriptions + grammar from the pinned Config.zig
 bun run bundle     # Rolldown bundle to out/
 bun run watch      # Rolldown watch build
 bun run typecheck  # Type-check without emitting
@@ -144,8 +152,11 @@ bun run setup:ghostty # Install the pinned Ghostty (macOS); no-op when current
   local Linux setup needs that `.deb` installed or `GHOSTTY_BIN`).
   `/Applications/Ghostty.app` is never used, so its auto-updates can't
   change test results. Upstream publishes no DMG checksum; its `sha256`
-  was computed at pin time. To bump: update all fields in the pin file
-  (the `.deb` digest is on its GitHub release), then revisit
+  was computed at pin time (verify it against the Sparkle `edSignature` in
+  `https://release.files.ghostty.org/appcast.xml`). To bump: update all
+  fields in the pin file (the `.deb` digest is on its GitHub release), run
+  `bun run gen:config`, diff upstream's `compatibility` table and enum types
+  against `renamedKeys`/`deprecatedValues`/`configMetadata`, then revisit
   `newerThanInstalled`.
 
 - **Unit + property** (`test/unit/`): `properties.test.ts` uses fast-check
@@ -177,9 +188,13 @@ bun run setup:ghostty # Install the pinned Ghostty (macOS); no-op when current
 
 ## Working Rules For Future Changes
 
-- To pick up upstream key/description changes, run `bun run gen:config` and
-  commit the regenerated `src/generated/config-keys.ts` and grammar. Don't
-  hand-edit the generated file or the grammar's key/enum alternations.
+- To pick up upstream key/description changes, bump the pinned release and
+  run `bun run gen:config`, then commit the regenerated
+  `src/generated/config-keys.ts` and grammar. Don't hand-edit the generated
+  file or the grammar's key/enum alternations.
+- When upstream renames a key or deprecates a value through its
+  `compatibility` table, add it to `renamedKeys` or `deprecatedValues`; the
+  CLI integration test checks the real Ghostty still accepts every entry.
 - For value/validation metadata (enums, color/font assets, comma
   semantics), edit `configMetadata` in `src/core/schema.ts`;
   `bun run gen:config` reads it to regenerate the grammar's enum alternation.

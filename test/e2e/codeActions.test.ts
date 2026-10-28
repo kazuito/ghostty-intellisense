@@ -105,6 +105,32 @@ suite("code actions", () => {
     await waitForCodes(doc, []);
   });
 
+  test("Rename a deprecated key to its new name", async () => {
+    const { doc, actions } = await fixesFor("scrollback-limit = 1000\n", [
+      "deprecated-key",
+    ]);
+    assert.deepStrictEqual(titles(actions), [
+      "Rename to 'scrollback-limit-bytes'",
+    ]);
+    assert.strictEqual(
+      await apply(doc, actions, "Rename to 'scrollback-limit-bytes'"),
+      "scrollback-limit-bytes = 1000\n",
+    );
+    await waitForCodes(doc, []);
+  });
+
+  test("Replace a deprecated value", async () => {
+    const { doc, actions } = await fixesFor("copy-on-select = false\n", [
+      "deprecated-value",
+    ]);
+    assert.deepStrictEqual(titles(actions), ["Replace with 'none'"]);
+    assert.strictEqual(
+      await apply(doc, actions, "Replace with 'none'"),
+      "copy-on-select = none\n",
+    );
+    await waitForCodes(doc, []);
+  });
+
   test("Replace with a valid enum value", async () => {
     const { doc, actions } = await fixesFor("cursor-style = nope\n", [
       "invalid-value",

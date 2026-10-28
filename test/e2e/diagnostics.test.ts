@@ -106,6 +106,27 @@ suite("diagnostics", () => {
     await waitForCodes(doc, ["unknown-key"]);
   });
 
+  test("flags deprecated keys and values Ghostty still accepts", async () => {
+    const doc = await openDoc(
+      `scrollback-limit = 1000\ncopy-on-select = false\n${SENTINEL}\n`,
+    );
+    // The sentinel proves the CLI ran and accepted both deprecated lines.
+    const diags = await waitForCodes(doc, [
+      "deprecated-key",
+      "deprecated-value",
+      "unknown-key",
+    ]);
+    assert.deepStrictEqual(summarize(diags), [
+      { code: "deprecated-key", line: 0, start: 0, end: 16 },
+      { code: "deprecated-value", line: 1, start: 17, end: 22 },
+      { code: "unknown-key", line: 2, start: 0, end: 9 },
+    ]);
+    for (const diag of diags.filter((d) => codeOf(d) !== "unknown-key")) {
+      assert.strictEqual(diag.severity, vscode.DiagnosticSeverity.Hint);
+      assert.deepStrictEqual(diag.tags, [vscode.DiagnosticTag.Deprecated]);
+    }
+  });
+
   test("ranges invalid values that are not enums", async () => {
     const doc = await openDoc("font-size = abc\nfont-thicken = maybe\n");
     const diags = await waitForCodes(doc, ["invalid-value", "invalid-value"]);

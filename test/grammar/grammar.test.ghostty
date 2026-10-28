@@ -48,3 +48,16 @@ title = "unclosed
 font-size = 14
 # <--------- support.type.property-name.ghostty - string.quoted.double.ghostty
 #           ^^ constant.numeric.integer.ghostty - string.quoted.double.ghostty
+
+scrollback-limit = 1000
+# <---------------- support.type.property-name.ghostty
+#                  ^^^^ constant.numeric.integer.ghostty
+
+scrollback-limit-lines = unlimited
+#                        ^^^^^^^^^ constant.language.enum.ghostty
+
+copy-on-select = both
+#                ^^^^ constant.language.enum.ghostty
+
+window-padding-balance = equal
+#                        ^^^^^ constant.language.enum.ghostty

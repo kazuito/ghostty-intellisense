@@ -20,7 +20,8 @@
     "test/unit/**/*",
     "test/integration/**/*",
     "test/ghostty.ts",
-    "test/ghostty-pin.json"
+    "test/ghostty-pin.json",
+    "scripts/gen-config.ts"
   ],
   "references": [{ "path": "./tsconfig.app.json" }]
 }

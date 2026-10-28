@@ -345,6 +345,13 @@ describe("formatDocument", () => {
     );
   });
 
+  it("formats a renamed key's value like the key it now sets", () => {
+    const input = "background-blur-radius = TRUE\nnot-a-real-key = TRUE\n";
+    expect(formatDocument(input, opts({ booleanCase: "lowercase" }))).toBe(
+      "background-blur-radius = true\nnot-a-real-key = TRUE\n",
+    );
+  });
+
   it("normalizes boolean values", () => {
     const input = "font-thicken = TRUE\n";
     expect(formatDocument(input, opts({ booleanCase: "lowercase" }))).toBe(

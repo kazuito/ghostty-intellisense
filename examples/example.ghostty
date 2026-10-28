@@ -145,7 +145,8 @@ input = raw:printf 'bootstrapped\n'
 input = path:/Users/ghost/dev/ghostty/test-config
 wait-after-command = false
 abnormal-command-exit-runtime = 250
-scrollback-limit = 200000
+scrollback-limit-bytes = 200000
+scrollback-limit-lines = unlimited
 shell-integration = zsh
 shell-integration-features = cursor, sudo, title, ssh-env, no-path
 osc-color-report-format = 16-bit
@@ -170,7 +171,8 @@ clipboard-paste-protection = true
 clipboard-paste-bracketed-safe = false
 title-report = false
 image-storage-limit = 640000000
-copy-on-select = clipboard
+copy-on-select = both
+middle-click-action = primary-paste
 right-click-action = copy-or-paste
 click-repeat-interval = 350
 
@@ -204,7 +206,7 @@ bell-audio-path = /System/Library/Sounds/Glass.aiff
 bell-audio-volume = 0.4
 app-notifications = true
 desktop-notifications = true
-# progress-style = floating,dock,no-hidden
+# progress-style = false
 
 # macOS-specific toggles
 macos-non-native-fullscreen = visible-menu

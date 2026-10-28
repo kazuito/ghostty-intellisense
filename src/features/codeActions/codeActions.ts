@@ -1,7 +1,13 @@
 import { parseDocumentLine, type Range, splitLines } from "@/core/document";
-import { ghosttyConfigOptions, optionByKey } from "@/core/schema";
+import {
+  canonicalKey,
+  deprecatedValue,
+  ghosttyConfigOptions,
+  optionByKey,
+  renamedKeys,
+} from "@/core/schema";
 
-export type DiagnosticSeverity = "warning" | "information" | "error";
+export type DiagnosticSeverity = "warning" | "information" | "error" | "hint";
 
 export interface DiagnosticLike {
   range: Range;
@@ -67,6 +73,15 @@ export function getCodeActionSuggestions(
   const suggestions: CodeActionSuggestion[] = [];
 
   for (const diagnostic of diagnostics) {
+    // Only our deprecation notices are hints worth acting on.
+    if (
+      diagnostic.severity === "hint" &&
+      diagnostic.code !== "deprecated-key" &&
+      diagnostic.code !== "deprecated-value"
+    ) {
+      continue;
+    }
+
     const lineIndex = diagnostic.range.start.line;
     const line = lines[lineIndex] ?? "";
     const deleteRange =
@@ -107,8 +122,34 @@ export function getCodeActionSuggestions(
       continue;
     }
 
+    if (diagnostic.code === "deprecated-key") {
+      const renamed = "key" in parsed && renamedKeys.get(parsed.key);
+      if (renamed) {
+        suggestions.push({
+          title: `Rename to '${renamed}'`,
+          edit: { range: parsed.keyRange, newText: renamed },
+        });
+      }
+      continue;
+    }
+
+    if (diagnostic.code === "deprecated-value") {
+      if (parsed.type !== "entry") continue;
+      const deprecated = deprecatedValue(
+        canonicalKey(parsed.key),
+        parsed.rawValue.trim(),
+      );
+      for (const replacement of deprecated?.replacements ?? []) {
+        suggestions.push({
+          title: `Replace with '${replacement}'`,
+          edit: { range: parsed.valueRange, newText: replacement },
+        });
+      }
+      continue;
+    }
+
     if (parsed.type !== "entry") continue;
-    const values = optionByKey.get(parsed.key)?.enum;
+    const values = optionByKey.get(canonicalKey(parsed.key))?.enum;
     if (!values) continue;
 
     for (const value of values.slice(0, MAX_ENUM_REPLACEMENT_SUGGESTIONS)) {

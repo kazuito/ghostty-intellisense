@@ -216,6 +216,42 @@ describe("completion provider - value completions", () => {
         expected: ["top", "bottom"],
         unexpected: ["left", "right", "hidden"],
       },
+      {
+        input: "copy-on-select = ",
+        cursor: 17,
+        expected: ["none", "primary", "clipboard", "both"],
+        unexpected: ["true", "false"],
+      },
+      {
+        input: "window-padding-balance = ",
+        cursor: 25,
+        expected: ["true", "false", "equal"],
+        unexpected: [],
+      },
+      {
+        input: "middle-click-action = ",
+        cursor: 22,
+        expected: ["primary-paste", "clipboard-paste", "ignore"],
+        unexpected: [],
+      },
+      {
+        input: "scrollback-limit-lines = ",
+        cursor: 25,
+        expected: ["unlimited"],
+        unexpected: [],
+      },
+      {
+        input: "progress-style = ",
+        cursor: 17,
+        expected: ["true", "false"],
+        unexpected: ["floating", "no-dock"],
+      },
+      {
+        input: "macos-window-buttons = ",
+        cursor: 23,
+        expected: ["visible", "hidden"],
+        unexpected: ["macos-native"],
+      },
     ] as const;
 
     for (const testCase of cases) {
@@ -230,6 +266,23 @@ describe("completion provider - value completions", () => {
         expect(labels).not.toContain(value);
       }
     }
+  });
+});
+
+describe("completion provider - renamed keys", () => {
+  it("completes values for a renamed key like the key it now sets", () => {
+    const complete = setupCompletion("scrollback-limit = ");
+    const labels = complete(0, 19)?.items.map((i) => i.label);
+    expect(labels).toEqual(["unlimited"]);
+  });
+
+  it("does not suggest the new key when its old name is already used", () => {
+    const complete = setupCompletion(
+      "scrollback-limit = 1000\nscrollback-limit",
+    );
+    const labels = complete(1, 16)?.items.map((i) => i.label) ?? [];
+    expect(labels).toContain("scrollback-limit-lines");
+    expect(labels).not.toContain("scrollback-limit-bytes");
   });
 });
 

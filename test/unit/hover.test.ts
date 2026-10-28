@@ -95,6 +95,15 @@ describe("hover provider", () => {
     expect(contents.value).toContain("font-size");
   });
 
+  it("documents a renamed key under its new name with a deprecation note", () => {
+    const hover = setupHover("scrollback-limit = 1000");
+    const contents = hover(0, 0)?.contents as { value: string };
+    expect(contents.value).toStartWith(
+      "**scrollback-limit-bytes**\n\n*Deprecated:* `scrollback-limit` was renamed to `scrollback-limit-bytes`.\n\nThe size of the scrollback buffer in bytes.",
+    );
+    expect(contents.value).toEndWith("reference#scrollback-limit-bytes)");
+  });
+
   it("returns null when hovering a different line (comment)", () => {
     const hover = setupHover("# comment\nfont-size = 14");
     expect(hover(0, 0)).toBeNull();

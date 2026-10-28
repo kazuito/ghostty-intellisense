@@ -1,6 +1,6 @@
 import type { Range } from "@/core/document";
 
-export type DiagnosticSeverity = "warning" | "information" | "error";
+export type DiagnosticSeverity = "warning" | "information" | "error" | "hint";
 
 /** Literal message ghostty's `+validate-config` emits for an unrecognized key. */
 export const UNKNOWN_FIELD_MESSAGE = "unknown field";
@@ -15,6 +15,8 @@ export type ValidationDiagnosticCode =
   | "unknown-key"
   | "duplicate-key"
   | "invalid-value"
+  | "deprecated-key"
+  | "deprecated-value"
   | "unparsed";
 
 export interface ValidationDiagnostic {
@@ -22,6 +24,8 @@ export interface ValidationDiagnostic {
   message: string;
   severity: DiagnosticSeverity;
   code: ValidationDiagnosticCode;
+  /** Ghostty still accepts it but has deprecated it; editors strike it through. */
+  deprecated?: boolean;
 }
 
 export interface ValidationResult {
